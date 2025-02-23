@@ -103,6 +103,10 @@ urlpatterns = [
          name='edit_employee_salary'),
     path('manager/salary/fetch/', manager_views.fetch_employee_salary,
          name='fetch_employee_salary'),
+    path("manager/task/assign/", manager_views.manager_assign_task, name='manager_assign_task'),
+    
+    path("manager/task/view/", manager_views.manager_view_tasks, name='manager_view_tasks'),
+
 
 
 
@@ -122,5 +126,8 @@ urlpatterns = [
          name="employee_view_notification"),
     path('employee/view/salary/', employee_views.employee_view_salary,
          name='employee_view_salary'),
+    path("employee/tasks/", employee_views.employee_view_tasks, name='employee_view_tasks'),
+
+  
 
 ]

@@ -184,3 +184,14 @@ def save_user_profile(sender, instance, **kwargs):
         instance.manager.save()
     if instance.user_type == 3:
         instance.employee.save()
+
+class Task(models.Model):
+    manager = models.ForeignKey('Manager', on_delete=models.CASCADE)
+    employee = models.ForeignKey('Employee', on_delete=models.CASCADE)
+    title = models.CharField(max_length=255)
+    description = models.TextField()
+    deadline = models.DateTimeField()
+    status = models.CharField(max_length=20, choices=[('Pending', 'Pending'), ('In Progress', 'In Progress'), ('Completed', 'Completed')], default='Pending')
+
+    def __str__(self):
+        return self.title

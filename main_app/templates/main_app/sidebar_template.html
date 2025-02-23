@@ -145,7 +145,7 @@
                             </p>
                         </a>
                     </li>  
-            <li class="nav-item">
+            <!-- <li class="nav-item">
                 {% url 'employee_feedback_message' as employee_feedback_message %}
 
                 <a href="{{ employee_feedback_message }}" class="nav-link  {% if employee_feedback_message == request.path %} active {% endif %}">
@@ -155,8 +155,8 @@
                             
                         </p>
                     </a>
-                </li>
-                <li class="nav-item">
+                </li> -->
+                <!-- <li class="nav-item">
                 {% url 'manager_feedback_message' as manager_feedback_message %}
 
                     <a href="{{manager_feedback_message}}" class="nav-link   {% if manager_feedback_message == request.path %} active {% endif %}">
@@ -166,8 +166,8 @@
                             
                         </p>
                     </a>
-                </li>
-                <li class="nav-item">
+                </li> -->
+                <!-- <li class="nav-item">
                 {% url 'view_manager_leave' as view_manager_leave %}
 
                     <a href="{{view_manager_leave}}" class="nav-link  {% if view_manager_leave == request.path %} active {% endif %}">
@@ -177,7 +177,7 @@
                             
                         </p>
                     </a>
-                </li>
+                </li> -->
                 <li class="nav-item">
                 {% url 'view_employee_leave' as view_employee_leave %}
 
@@ -244,7 +244,7 @@
                     </a>
                 </li>
 
-                <li class="nav-item">
+                <!-- <li class="nav-item">
                     {% url 'manager_view_profile' as manager_view_profile %}
                     <a href="{{manager_view_profile}}" class="nav-link {% if manager_view_profile == request.path %} active {% endif %}">
                         <i class="nav-icon fas fa-th"></i>
@@ -253,9 +253,9 @@
 
                         </p>
                     </a>
-                </li>
+                </li> -->
 
-                <li class="nav-item">
+                <!-- <li class="nav-item">
                     {% url 'manager_add_salary' as manager_add_salary %}
                     <a href="{{manager_add_salary}}" class="nav-link {% if manager_add_salary == request.path %} active {% endif %}">
                         <i class="nav-icon fas fa-th"></i>
@@ -263,8 +263,8 @@
                             Add Salary
 
                         </p>
-                    </a>
-                </li>  
+                    </a> -->
+                <!-- </li>  
                  <li class="nav-item">
                     {% url 'edit_employee_salary' as edit_employee_salary %}
                     <a href="{{edit_employee_salary}}" class="nav-link {% if edit_employee_salary == request.path %} active {% endif %}">
@@ -274,7 +274,7 @@
 
                         </p>
                     </a>
-                </li>
+                </li> -->
                 <li class="nav-item">
                     {% url 'manager_take_attendance' as manager_take_attendance %}
                     <a href="{{manager_take_attendance}}" class="nav-link {% if manager_take_attendance == request.path %} active {% endif %}">
@@ -295,7 +295,7 @@
                         </p>
                     </a>
                 </li>
-                <li class="nav-item">
+                <!-- <li class="nav-item">
                     {% url 'manager_view_notification' as manager_view_notification %}
                     <a href="{{manager_view_notification}}" class="nav-link {% if manager_view_notification == request.path %} active {% endif %}">
                         <i class="nav-icon fas fa-th"></i>
@@ -304,7 +304,7 @@
 
                         </p>
                     </a>
-                </li>
+                </li> -->
 
                 <li class="nav-item">
                     {% url 'manager_apply_leave' as manager_apply_leave %}
@@ -317,7 +317,7 @@
                     </a>
                 </li>
 
-                <li class="nav-item">
+                <!-- <li class="nav-item">
                     {% url 'manager_feedback' as manager_feedback %}
                     <a href="{{manager_feedback}}" class="nav-link {% if manager_feedback == request.path %} active {% endif %}">
                         <i class="nav-icon fas fa-th"></i>
@@ -325,6 +325,22 @@
                            Feedback
 
                         </p>
+                    </a>
+                </li> -->
+
+                <li class="nav-item">
+                    {% url 'manager_assign_task' as manager_assign_task %}
+                    <a href="{{ manager_assign_task }}" class="nav-link {% if manager_assign_task == request.path %} active {% endif %}">
+                        <i class="nav-icon fas fa-tasks"></i>
+                        <p>Assign Task</p>
+                    </a>
+                </li>
+        
+                <li class="nav-item">
+                    {% url 'manager_view_tasks' as manager_view_tasks %}
+                    <a href="{{ manager_view_tasks }}" class="nav-link {% if manager_view_tasks == request.path %} active {% endif %}">
+                        <i class="nav-icon fas fa-list"></i>
+                        <p>View Tasks</p>
                     </a>
                 </li>
           
@@ -364,7 +380,7 @@
                     </a>
                 </li>
 
-                <li class="nav-item">
+                <!-- <li class="nav-item">
                     {% url 'employee_view_profile' as employee_view_profile %}
                     <a href="{{employee_view_profile}}" class="nav-link {% if employee_view_profile == request.path %} active {% endif %}">
                         <i class="nav-icon fas fa-th"></i>
@@ -373,9 +389,9 @@
 
                         </p>
                     </a>
-                </li>
+                </li> -->
 
-                <li class="nav-item">
+                <!-- <li class="nav-item">
                     {% url 'employee_view_salary' as employee_view_salary %}
                     <a href="{% url 'employee_view_salary' %}" class="nav-link {% if employee_view_salary == request.path %} active {% endif %}">
                         <i class="nav-icon fas fa-th"></i>
@@ -383,7 +399,7 @@
                             View Salary
                         </p>
                     </a>
-                </li>
+                </li> -->
           
                 <li class="nav-item">
                     {% url 'employee_view_attendance' as employee_view_attendance %}
@@ -393,7 +409,7 @@
                     </a>
                 </li>
 
-                <li class="nav-item">
+                <!-- <li class="nav-item">
                     {% url 'employee_view_notification' as employee_view_notification %}
                     <a href="{{employee_view_notification}}" class="nav-link {% if employee_view_notification == request.path %} active {% endif %}">
                         <i class="nav-icon fas fa-th"></i>
@@ -402,7 +418,7 @@
 
                         </p>
                     </a>
-                </li>
+                </li> -->
 
                 <li class="nav-item">
                     {% url 'employee_apply_leave' as employee_apply_leave %}
@@ -415,7 +431,7 @@
                     </a>
                 </li>
 
-                <li class="nav-item">
+                <!-- <li class="nav-item">
                     {% url 'employee_feedback' as employee_feedback %}
                     <a href="{{employee_feedback}}" class="nav-link {% if employee_feedback == request.path %} active {% endif %}">
                         <i class="nav-icon fas fa-th"></i>
@@ -424,7 +440,18 @@
 
                         </p>
                     </a>
+                </li> -->
+
+                <li class="nav-item">
+                    {% url 'employee_view_tasks' as employee_view_tasks %}
+                    <a href="{{ employee_view_tasks }}" class="nav-link {% if employee_view_tasks == request.path %} active {% endif %}">
+                        <i class="nav-icon fas fa-tasks"></i>
+                        <p>My Tasks</p>
+                    </a>
                 </li>
+
+                
+        
           
 {% endif %}
 

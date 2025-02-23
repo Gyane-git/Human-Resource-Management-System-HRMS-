@@ -9,6 +9,9 @@ from django.views.decorators.csrf import csrf_exempt
 
 from .forms import *
 from .models import *
+from .models import Task, Employee, Manager
+from .forms import TaskForm
+
 
 
 def manager_home(request):
@@ -299,3 +302,29 @@ def fetch_employee_salary(request):
         return HttpResponse(json.dumps(salary_data))
     except Exception as e:
         return HttpResponse('False')
+
+def manager_assign_task(request):
+    manager = get_object_or_404(Manager, admin=request.user)
+    employees = Employee.objects.filter(division=manager.division)
+
+    if request.method == "POST":
+        form = TaskForm(request.POST)
+        if form.is_valid():
+            task = form.save(commit=False)
+            task.manager = manager
+            task.save()
+            messages.success(request, "Task assigned successfully!")
+            return redirect('manager_view_tasks')
+    else:
+        form = TaskForm()
+
+    context = {'form': form, 'employees': employees}
+    return render(request, 'manager_template/assign_task.html', context)
+
+def manager_view_tasks(request):
+    manager = get_object_or_404(Manager, admin=request.user)
+    tasks = Task.objects.filter(manager=manager)
+
+    context = {'tasks': tasks}
+    return render(request, 'manager_template/view_tasks.html', context)
+

@@ -205,3 +205,14 @@ def employee_view_salary(request):
         'page_title': "View Salary"
     }
     return render(request, "employee_template/employee_view_salary.html", context)
+
+def employee_view_tasks(request):
+    employee = get_object_or_404(Employee, admin=request.user)
+    tasks = Task.objects.filter(employee=employee)
+
+    context = {
+        'tasks': tasks,
+        'page_title': 'My Tasks'
+    }
+    return render(request, 'employee_template/view_tasks.html', context)
+

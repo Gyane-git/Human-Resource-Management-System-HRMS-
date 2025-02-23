@@ -2,6 +2,15 @@ from django import forms
 from django.forms.widgets import DateInput, TextInput
 
 from .models import *
+from .models import Task
+
+class TaskForm(forms.ModelForm):
+    class Meta:
+        model = Task
+        fields = ['employee', 'title', 'description', 'deadline', 'status']
+        widgets = {
+            'deadline': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+        }
 
 
 class FormSettings(forms.ModelForm):
