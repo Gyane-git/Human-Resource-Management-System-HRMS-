@@ -324,7 +324,7 @@ def manager_assign_task(request):
 def manager_view_tasks(request):
     manager = get_object_or_404(Manager, admin=request.user)
     tasks = Task.objects.filter(manager=manager)
-
+ 
     context = {'tasks': tasks}
     return render(request, 'manager_template/view_tasks.html', context)
 

@@ -11,7 +11,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import UpdateView
 
 from .forms import *
-from .models import *
+from .models import * 
 
 
 def admin_home(request):
