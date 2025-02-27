@@ -1,5 +1,5 @@
 import json
-import requests
+#import requests
 from django.contrib import messages
 from django.core.files.storage import FileSystemStorage
 from django.http import HttpResponse, JsonResponse
