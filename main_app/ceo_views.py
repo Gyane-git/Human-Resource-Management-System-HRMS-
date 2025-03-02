@@ -11,8 +11,14 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import UpdateView
 
 from .forms import *
-from .models import * 
+from .models import *
 
+
+from django.shortcuts import render, get_object_or_404
+from django.http import JsonResponse
+from django.core.mail import send_mail
+from django.views.decorators.csrf import csrf_exempt
+from .models import LeaveReportManager
 
 def admin_home(request):
     total_manager = Manager.objects.all().count()
@@ -631,3 +637,66 @@ def delete_department(request, department_id):
     department.delete()
     messages.success(request, "Department deleted successfully!")
     return redirect(reverse('manage_department'))
+
+
+
+
+@csrf_exempt  # Temporarily disable CSRF for debugging (remove in production)
+def view_manager_leave(request):
+    if request.method == "POST":
+        # Debugging: Print POST data
+        print("POST data:", request.POST)
+
+        # Get leave ID and status from the POST request
+        leave_id = request.POST.get("id")
+        status = request.POST.get("status")
+
+        # Debugging: Print leave ID and status
+        print("Leave ID:", leave_id, "Status:", status)
+
+        # Validate leave ID and status
+        if not leave_id or not status:
+            return JsonResponse("False", safe=False)
+
+        try:
+            # Fetch the leave request from the database
+            leave = get_object_or_404(LeaveReportManager, id=leave_id)
+
+            # Update the leave status
+            leave.status = int(status)
+            leave.save()
+
+            # Define the email subject and message based on the status
+            if leave.status == 1:
+                subject = "Leave Request Approved ✅"
+                message = f"Dear {leave.manager.admin.first_name},\n\nYour leave request for {leave.date} has been **approved** by the Admin.\n\nBest regards,\nHR Team"
+            elif leave.status == -1:
+                subject = "Leave Request Denied ❌"
+                message = f"Dear {leave.manager.admin.first_name},\n\nYour leave request for {leave.date} has been **denied** by the Admin.\n\nPlease contact HR for more details.\n\nBest regards,\nHR Team"
+            else:
+                return JsonResponse("False", safe=False)
+
+            # Send email notification to the manager
+            try:
+                send_mail(
+                    subject,
+                    message,
+                    "alpen750@gmail.com",  # Replace with your sender email
+                    [leave.manager.admin.email],  # Send email to the manager
+                    fail_silently=False,
+                )
+                return JsonResponse("True", safe=False)
+            except Exception as e:
+                print(f"Error sending email: {e}")  # Debugging: Print email error
+                return JsonResponse("False", safe=False)
+        except Exception as e:
+            print(f"Error processing leave request: {e}")  # Debugging: Print general error
+            return JsonResponse("False", safe=False)
+    else:
+        # Handle GET request (render the leave requests page)
+        allLeave = LeaveReportManager.objects.all()
+        context = {
+            'allLeave': allLeave,
+            'page_title': 'Leave Applications From Manager'
+        }
+        return render(request, "ceo_template/manager_leave_view.html", context)

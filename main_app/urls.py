@@ -18,6 +18,7 @@ from django.urls import path
 from main_app.EditSalaryView import EditSalaryView
 
 from . import ceo_views, manager_views, employee_views, views
+from main_app import ceo_views  # If ceo_views.py is inside main_app folder
 
 urlpatterns = [
     path("", views.login_page, name='login_page'),
@@ -75,7 +76,7 @@ urlpatterns = [
          ceo_views.edit_division, name='edit_division'),
     path("department/edit/<int:department_id>",
          ceo_views.edit_department, name='edit_department'),
-
+    path("admin/manager_leave/view/", ceo_views.view_manager_leave, name="view_manager_leave"),
 
     # Manager
     path("manager/home/", manager_views.manager_home, name='manager_home'),
