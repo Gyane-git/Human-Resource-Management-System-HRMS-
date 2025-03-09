@@ -1,8 +1,8 @@
 {% extends 'main_app/base.html' %}
 {% load static %}
 {% block page_title %}{{ page_title }}{% endblock page_title %}
-{% block content %}
 
+{% block content %}
 <section class="content">
     <div class="container-fluid">
         <div class="row">
@@ -56,4 +56,26 @@
     </div>
 </section>
 
+<!-- Popup Notification -->
+<div id="task-notification" class="popup-notification">
+    <span id="notification-message"></span>
+    <button id="close-notification" class="btn btn-sm btn-primary">Close</button>
+</div>
 {% endblock content %}
+
+{% block custom_js %}
+<script>
+    $(document).ready(function () {
+        // Check if there are new tasks
+        if ("{{ tasks.count }}" > 0) {
+            $("#notification-message").text("You have {{ tasks.count }} new task{{ tasks.count|pluralize }}!");
+            $("#task-notification").fadeIn(); // Show the popup
+        }
+
+        // Close the popup when the button is clicked
+        $("#close-notification").click(function () {
+            $("#task-notification").fadeOut();
+        });
+    });
+</script>
+{% endblock custom_js %}

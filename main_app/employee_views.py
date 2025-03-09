@@ -14,6 +14,7 @@ from .forms import *
 from .models import *
 
 
+
 def employee_home(request):
     employee = get_object_or_404(Employee, admin=request.user)
     total_department = Department.objects.filter(division=employee.division).count()
@@ -215,4 +216,5 @@ def employee_view_tasks(request):
         'page_title': 'My Tasks'
     }
     return render(request, 'employee_template/view_tasks.html', context)
+
 

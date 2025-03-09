@@ -128,6 +128,7 @@ urlpatterns = [
     path('employee/view/salary/', employee_views.employee_view_salary,
          name='employee_view_salary'),
     path("employee/tasks/", employee_views.employee_view_tasks, name='employee_view_tasks'),
+    
 
   
 
