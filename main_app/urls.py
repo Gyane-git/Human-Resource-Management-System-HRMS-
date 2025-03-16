@@ -20,6 +20,7 @@ from main_app.EditSalaryView import EditSalaryView
 from . import ceo_views, manager_views, employee_views, views
 from main_app import ceo_views  # If ceo_views.py is inside main_app folder
 
+
 urlpatterns = [
     path("", views.login_page, name='login_page'),
     path("get_attendance", views.get_attendance, name='get_attendance'),
@@ -77,6 +78,8 @@ urlpatterns = [
     path("department/edit/<int:department_id>",
          ceo_views.edit_department, name='edit_department'),
     path("admin/manager_leave/view/", ceo_views.view_manager_leave, name="view_manager_leave"),
+    path("admin/employee_leave/view/", ceo_views.view_employee_leave, name="view_employee_leave"),
+
 
     # Manager
     path("manager/home/", manager_views.manager_home, name='manager_home'),
@@ -107,6 +110,8 @@ urlpatterns = [
     path("manager/task/assign/", manager_views.manager_assign_task, name='manager_assign_task'),
     
     path("manager/task/view/", manager_views.manager_view_tasks, name='manager_view_tasks'),
+    path("manager/task/update_rating/", manager_views.update_task_rating, name="update_task_rating"),
+
 
 
 
@@ -128,7 +133,13 @@ urlpatterns = [
     path('employee/view/salary/', employee_views.employee_view_salary,
          name='employee_view_salary'),
     path("employee/tasks/", employee_views.employee_view_tasks, name='employee_view_tasks'),
-    
+    path("employee/home/", employee_views.employee_home, name="employee_home"),
+    path("employee/task/count/", employee_views.employee_task_count, name="employee_task_count"),
+    path("employee/task/update_status/", employee_views.update_task_status, name="update_task_status"),
+    path("employee/task/upload_file/", employee_views.upload_task_file, name="upload_task_file"),
+
+
+
 
   
 

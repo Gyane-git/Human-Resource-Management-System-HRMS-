@@ -195,3 +195,46 @@ class Task(models.Model):
 
     def __str__(self):
         return self.title
+
+from django.db import models
+
+class Task(models.Model):
+    STATUS_CHOICES = [
+        ("Pending", "Pending"),
+        ("In Progress", "In Progress"),
+        ("Completed", "Completed"),
+    ]
+
+    manager = models.ForeignKey("Manager", on_delete=models.CASCADE)
+    employee = models.ForeignKey("Employee", on_delete=models.CASCADE)
+    title = models.CharField(max_length=255)
+    description = models.TextField()
+    deadline = models.DateTimeField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="Pending")
+    file = models.FileField(upload_to="task_files/", null=True, blank=True)  # Add file field
+
+    def __str__(self):
+        return self.title
+
+
+
+from django.db import models
+
+class Task(models.Model):
+    STATUS_CHOICES = [
+        ("Pending", "Pending"),
+        ("In Progress", "In Progress"),
+        ("Completed", "Completed"),
+    ]
+
+    manager = models.ForeignKey("Manager", on_delete=models.CASCADE)
+    employee = models.ForeignKey("Employee", on_delete=models.CASCADE)
+    title = models.CharField(max_length=255)
+    description = models.TextField()
+    deadline = models.DateTimeField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="Pending")
+    file = models.FileField(upload_to="task_files/", null=True, blank=True)  # Task file
+    rating = models.IntegerField(null=True, blank=True)  # Task rating (1-5)
+
+    def __str__(self):
+        return self.title

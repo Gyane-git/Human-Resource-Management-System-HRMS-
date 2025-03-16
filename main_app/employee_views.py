@@ -14,7 +14,6 @@ from .forms import *
 from .models import *
 
 
-
 def employee_home(request):
     employee = get_object_or_404(Employee, admin=request.user)
     total_department = Department.objects.filter(division=employee.division).count()
@@ -217,4 +216,56 @@ def employee_view_tasks(request):
     }
     return render(request, 'employee_template/view_tasks.html', context)
 
+from django.shortcuts import render, get_object_or_404
+from .models import Task, Employee
+
+def employee_home(request):
+    employee = get_object_or_404(Employee, admin=request.user)
+    task_count = Task.objects.filter(employee=employee, status="Pending").count()  # Only count pending tasks
+
+    context = {
+        "page_title": "Employee Dashboard",
+        "task_count": task_count,  # Pass task count to the template
+    }
+    return render(request, "employee_template/home_content.html", context)
+
+from django.http import JsonResponse
+
+def employee_task_count(request):
+    employee = get_object_or_404(Employee, admin=request.user)
+    task_count = Task.objects.filter(employee=employee, status="Pending").count()
+    
+    return JsonResponse({"task_count": task_count})
+
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
+from .models import Task
+from django.core.files.storage import FileSystemStorage
+
+# Update Task Status
+def update_task_status(request):
+    if request.method == "POST":
+        task_id = request.POST.get("task_id")
+        new_status = request.POST.get("status")
+        task = get_object_or_404(Task, id=task_id)
+        task.status = new_status
+        task.save()
+        return JsonResponse({"success": True})
+    return JsonResponse({"success": False})
+
+# Upload Task File
+def upload_task_file(request):
+    if request.method == "POST" and request.FILES.get("task_file"):
+        task_id = request.POST.get("task_id")
+        task = get_object_or_404(Task, id=task_id)
+
+        # Save file
+        file = request.FILES["task_file"]
+        fs = FileSystemStorage()
+        filename = fs.save(file.name, file)
+        task.file = fs.url(filename)  # Save file URL in database
+        task.save()
+
+        return JsonResponse({"success": True, "file_url": task.file.url})
+    return JsonResponse({"success": False})
 

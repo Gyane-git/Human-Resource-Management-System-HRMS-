@@ -13,12 +13,13 @@ from django.views.generic import UpdateView
 from .forms import *
 from .models import *
 
-
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse
 from django.core.mail import send_mail
 from django.views.decorators.csrf import csrf_exempt
 from .models import LeaveReportManager
+from .models import LeaveReportEmployee
 
 def admin_home(request):
     total_manager = Manager.objects.all().count()
@@ -700,3 +701,61 @@ def view_manager_leave(request):
             'page_title': 'Leave Applications From Manager'
         }
         return render(request, "ceo_template/manager_leave_view.html", context)
+    
+from django.shortcuts import render, get_object_or_404
+from django.http import JsonResponse
+from django.core.mail import send_mail
+from .models import LeaveReportEmployee
+from django.conf import settings
+
+def view_employee_leave(request):
+    if request.method == "GET":
+        # ✅ Handle GET request to display leave requests in the admin panel
+        allLeave = LeaveReportEmployee.objects.all()
+        context = {
+            'allLeave': allLeave,
+            'page_title': 'Leave Applications From Employees'
+        }
+        return render(request, "ceo_template/employee_leave_view.html", context)
+
+    elif request.method == "POST":
+        # ✅ Handle POST request to approve/reject leave and send email
+        leave_id = request.POST.get("id")
+        status = request.POST.get("status")
+
+        try:
+            leave = LeaveReportEmployee.objects.get(id=leave_id)
+        except LeaveReportEmployee.DoesNotExist:
+            return JsonResponse({"status": "False", "message": "Leave request not found"}, safe=False)
+
+        if status not in ['1', '-1']:
+            return JsonResponse({"status": "False", "message": "Invalid status value"}, safe=False)
+
+        # Update leave status
+        leave.status = int(status)
+        leave.save()
+
+        # Define email content
+        if leave.status == 1:
+            subject = "Leave Request Approved ✅"
+            message = f"Dear {leave.employee.admin.first_name},\n\nYour leave request for {leave.date} has been **approved** by the Admin.\n\nBest regards,\nHR Team"
+        else:
+            subject = "Leave Request Rejected ❌"
+            message = f"Dear {leave.employee.admin.first_name},\n\nYour leave request for {leave.date} has been **rejected** by the Admin.\n\nPlease contact HR for more details.\n\nBest regards,\nHR Team"
+
+        # Send email notification
+        try:
+            send_mail(
+                subject,
+                message,
+                settings.EMAIL_HOST_USER,  # Use email from settings
+                [leave.employee.admin.email],  # Send email to employee
+                fail_silently=False,
+            )
+        except Exception as e:
+            return JsonResponse({"status": "False", "message": f"Error sending email: {e}"}, safe=False)
+
+        return JsonResponse({"status": "True", "message": "Leave status updated and email sent successfully"}, safe=False)
+
+    else:
+        return JsonResponse({"status": "False", "message": "Invalid request method"}, safe=False)

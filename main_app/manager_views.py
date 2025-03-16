@@ -324,7 +324,25 @@ def manager_assign_task(request):
 def manager_view_tasks(request):
     manager = get_object_or_404(Manager, admin=request.user)
     tasks = Task.objects.filter(manager=manager)
- 
+
     context = {'tasks': tasks}
     return render(request, 'manager_template/view_tasks.html', context)
+
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
+from .models import Task
+
+def update_task_rating(request):
+    if request.method == "POST":
+        task_id = request.POST.get("task_id")
+        rating = request.POST.get("rating")
+        task = get_object_or_404(Task, id=task_id)
+
+        # Save rating in database
+        task.rating = int(rating)
+        task.save()
+
+        return JsonResponse({"success": True})
+    return JsonResponse({"success": False})
+
 
