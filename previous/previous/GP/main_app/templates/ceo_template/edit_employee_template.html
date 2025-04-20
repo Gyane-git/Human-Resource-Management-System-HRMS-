@@ -1,0 +1,79 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+{% block page_title %}{{page_title}}{% endblock page_title %}
+
+{% block content %}
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-12">
+                <!-- general form elements -->
+                <div class="card card-primary">
+                    <div class="card-header">
+                        <h3 class="card-title">{{page_title}}</h3>
+                    </div>
+                    {% include "main_app/form_template.html" with messages=messages  form=form button_text="Update Employee"%}
+                </div>
+                <!-- /.card -->
+
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock content %}
+
+{% block custom_js %}
+<script>
+    $(document).ready(function(){
+        // Handle division change to update department options
+        $("#id_division").change(function() {
+            var divisionId = $(this).val();
+            var departmentSelect = $("#id_department");
+            
+            // Clear current options
+            departmentSelect.empty().append('<option value="">---------</option>');
+            
+            // If no division is selected, do nothing more
+            if (!divisionId) {
+                return;
+            }
+            
+            // Show loading indicator
+            departmentSelect.append('<option value="">Loading departments...</option>');
+            
+            // Fetch departments for selected division
+            $.ajax({
+                url: window.location.href,  // Use current URL
+                type: 'GET',
+                data: {
+                    'division_id': divisionId,
+                    'action': 'get_departments'
+                },
+                dataType: 'json',
+                success: function(data) {
+                    // Clear loading indicator
+                    departmentSelect.empty().append('<option value="">---------</option>');
+                    
+                    // Add new options
+                    $.each(data.departments, function(index, dept) {
+                        departmentSelect.append(
+                            $('<option></option>').val(dept.id).text(dept.name)
+                        );
+                    });
+                },
+                error: function() {
+                    // Handle error
+                    departmentSelect.empty().append('<option value="">---------</option>');
+                    departmentSelect.append('<option value="">Error loading departments</option>');
+                }
+            });
+        });
+        
+        // Trigger the change event if a division is already selected (e.g., in edit mode)
+        if ($("#id_division").val()) {
+            $("#id_division").trigger('change');
+        }
+    });
+</script>
+{% endblock custom_js %}

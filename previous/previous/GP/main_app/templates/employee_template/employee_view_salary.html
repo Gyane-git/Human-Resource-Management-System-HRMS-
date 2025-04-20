@@ -1,0 +1,356 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+{% block page_title %}{{page_title}}{% endblock page_title %}
+{% block content %}
+
+<section class="content">
+    <div class="container-fluid">
+        {% if is_paid %}
+        <!-- Hidden element with data attributes for the toast notification -->
+        <div id="salary-notification" 
+             style="display: none;"
+             data-show="true"
+             data-message="Your salary for {{current_month}} has already been paid."
+             data-title="Notice!"
+             data-type="success">
+        </div>
+        {% endif %}
+        
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card card-primary">
+                    <div class="card-header">
+                        <h3 class="card-title">{{page_title}}</h3>
+                    </div>
+                    <div class="card-body">
+                        {% if salary %}
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Employee Name</label>
+                                    <input type="text" class="form-control" value="{{employee_data.name}}" readonly>
+                                </div>
+                                <div class="form-group">
+                                    <label>Employee ID</label>
+                                    <input type="text" class="form-control" value="{{employee_data.id}}" readonly>
+                                </div>
+                                <div class="form-group">
+                                    <label>Department</label>
+                                    <input type="text" class="form-control" value="{{employee_data.department}}" readonly>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Month/Year</label>
+                                    <input type="text" class="form-control" value="{{salary.month_year|date:'F Y'}}" readonly>
+                                </div>
+                                <div class="form-group">
+                                    <label>Payment Date</label>
+                                    <input type="text" class="form-control" value="{% if salary.payment_date %}{{salary.payment_date|date:'F j, Y'}}{% else %}Pending{% endif %}" readonly>
+                                </div>
+                                <div class="form-group">
+                                    <label>Status</label>
+                                    <input type="text" class="form-control {% if salary.status == 'paid' %}bg-success{% else %}bg-warning{% endif %}" value="{{salary.status|title}}" readonly>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header bg-primary">
+                                        <h3 class="card-title">Earnings</h3>
+                                    </div>
+                                    <div class="card-body p-0">
+                                        <table class="table table-striped">
+                                            <tr>
+                                                <th>Component</th>
+                                                <th class="text-right">Amount</th>
+                                            </tr>
+                                            <tr>
+                                                <td>Basic Salary</td>
+                                                <td class="text-right">${{salary.basic_salary|floatformat:2}}</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Meal Allowance</td>
+                                                <td class="text-right">${{salary.meal_allowance|floatformat:2}}</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Medical Allowance</td>
+                                                <td class="text-right">${{salary.medical_allowance|floatformat:2}}</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Transportation Allowance</td>
+                                                <td class="text-right">${{salary.transportation_allowance|floatformat:2}}</td>
+                                            </tr>
+                                            {% if salary.leave_payment > 0 %}
+                                            <tr>
+                                                <td>Leave Payment</td>
+                                                <td class="text-right">${{salary.leave_payment|floatformat:2}}</td>
+                                            </tr>
+                                            {% endif %}
+                                            <tr class="table-active">
+                                                <td><strong>Total Earnings</strong></td>
+                                                <td class="text-right"><strong>${{salary.total_earnings|floatformat:2}}</strong></td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header bg-primary">
+                                        <h3 class="card-title">Deductions</h3>
+                                    </div>
+                                    <div class="card-body p-0">
+                                        <table class="table table-striped">
+                                            <tr>
+                                                <th>Component</th>
+                                                <th class="text-right">Amount</th>
+                                            </tr>
+                                            <tr>
+                                                <td>Tax ({{salary.tax_percentage}}%)</td>
+                                                <td class="text-right">${{salary.tax_amount|floatformat:2}}</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Insurance ({{salary.insurance_percentage}}%)</td>
+                                                <td class="text-right">${{salary.insurance_amount|floatformat:2}}</td>
+                                            </tr>
+                                            <tr class="table-active">
+                                                <td><strong>Total Deductions</strong></td>
+                                                <td class="text-right"><strong>${{salary.total_deductions|floatformat:2}}</strong></td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-4">
+                            <div class="col-md-12">
+                                <div class="alert alert-success text-center">
+                                    <h3>Net Salary: ${{salary.net_salary|floatformat:2}}</h3>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="text-center mt-4">
+                            <button id="download-pdf" class="btn btn-primary">
+                                <i class="fas fa-file-pdf"></i> Download Salary Slip
+                            </button>
+                            <div id="loading-indicator" class="mt-2" style="display: none;">
+                                <i class="fas fa-spinner fa-spin"></i> Generating PDF...
+                            </div>
+                        </div>
+                        
+                        <!-- Hidden printable content for PDF -->
+                        <div id="salary_pdf_content" style="display: none;">
+                            <div style="width: 800px; padding: 40px; font-family: Arial, sans-serif; background-color: white;">
+                                <!-- Header -->
+                                <div style="text-align: center; margin-bottom: 30px;">
+                                    <h2 style="margin: 0; padding: 0; color: #000; font-size: 24px; font-weight: bold;">SALARY SLIP</h2>
+                                    <div style="height: 3px; background-color: #000; margin: 10px 0;"></div>
+                                </div>
+                                
+                                <!-- Employee Info Table -->
+                                <table style="width: 100%; margin-bottom: 30px; border-collapse: collapse;">
+                                    <tr>
+                                        <td style="width: 50%; padding: 5px;">
+                                            <p style="margin: 5px 0;"><strong>Employee Name:</strong> {{employee_data.name}}</p>
+                                        </td>
+                                        <td style="width: 50%; text-align: right; padding: 5px;">
+                                            <p style="margin: 5px 0;"><strong>Payment Month:</strong> {{salary.month_year|date:'F Y'}}</p>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 5px;">
+                                            <p style="margin: 5px 0;"><strong>Employee ID:</strong> {{employee_data.id}}</p>
+                                        </td>
+                                        <td style="text-align: right; padding: 5px;">
+                                            <p style="margin: 5px 0;"><strong>Payment Date:</strong> {% if salary.payment_date %}{{salary.payment_date|date:'F j, Y'}}{% else %}Pending{% endif %}</p>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 5px;">
+                                            <p style="margin: 5px 0;"><strong>Department:</strong> {{employee_data.department}}</p>
+                                        </td>
+                                        <td style="text-align: right; padding: 5px;">
+                                            <p style="margin: 5px 0;"><strong>Status:</strong> {{salary.status|title}}</p>
+                                        </td>
+                                    </tr>
+                                </table>
+                                
+                                <!-- Earnings Table -->
+                                <div style="margin-bottom: 30px;">
+                                    <h3 style="margin: 0 0 10px 0; padding: 0 0 5px 0; border-bottom: 1px solid #000; font-size: 18px;">Earnings</h3>
+                                    <table style="width: 100%; border-collapse: collapse;">
+                                        <tr>
+                                            <td style="padding: 8px 4px; border-bottom: 1px solid #000;">Basic Salary</td>
+                                            <td style="padding: 8px 4px; border-bottom: 1px solid #000; text-align: right;">${{salary.basic_salary|floatformat:2}}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 8px 4px; border-bottom: 1px solid #000;">Meal Allowance</td>
+                                            <td style="padding: 8px 4px; border-bottom: 1px solid #000; text-align: right;">${{salary.meal_allowance|floatformat:2}}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 8px 4px; border-bottom: 1px solid #000;">Medical Allowance</td>
+                                            <td style="padding: 8px 4px; border-bottom: 1px solid #000; text-align: right;">${{salary.medical_allowance|floatformat:2}}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 8px 4px; border-bottom: 1px solid #000;">Transportation Allowance</td>
+                                            <td style="padding: 8px 4px; border-bottom: 1px solid #000; text-align: right;">${{salary.transportation_allowance|floatformat:2}}</td>
+                                        </tr>
+                                        {% if salary.leave_payment > 0 %}
+                                        <tr>
+                                            <td style="padding: 8px 4px; border-bottom: 1px solid #000;">Leave Payment</td>
+                                            <td style="padding: 8px 4px; border-bottom: 1px solid #000; text-align: right;">${{salary.leave_payment|floatformat:2}}</td>
+                                        </tr>
+                                        {% endif %}
+                                        <tr>
+                                            <td style="padding: 8px 4px; border-bottom: 2px solid #000; font-weight: bold;">Total Earnings</td>
+                                            <td style="padding: 8px 4px; border-bottom: 2px solid #000; text-align: right; font-weight: bold;">${{salary.total_earnings|floatformat:2}}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                
+                                <!-- Deductions Table -->
+                                <div style="margin-bottom: 30px;">
+                                    <h3 style="margin: 0 0 10px 0; padding: 0 0 5px 0; border-bottom: 1px solid #000; font-size: 18px;">Deductions</h3>
+                                    <table style="width: 100%; border-collapse: collapse;">
+                                        <tr>
+                                            <td style="padding: 8px 4px; border-bottom: 1px solid #000;">Tax ({{salary.tax_percentage}}%)</td>
+                                            <td style="padding: 8px 4px; border-bottom: 1px solid #000; text-align: right;">${{salary.tax_amount|floatformat:2}}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 8px 4px; border-bottom: 1px solid #000;">Insurance ({{salary.insurance_percentage}}%)</td>
+                                            <td style="padding: 8px 4px; border-bottom: 1px solid #000; text-align: right;">${{salary.insurance_amount|floatformat:2}}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 8px 4px; border-bottom: 2px solid #000; font-weight: bold;">Total Deductions</td>
+                                            <td style="padding: 8px 4px; border-bottom: 2px solid #000; text-align: right; font-weight: bold;">${{salary.total_deductions|floatformat:2}}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                
+                                <!-- Net Salary Box -->
+                                <div style="margin: 30px 0; padding: 15px; background-color: #f5f5f5; border: 1px solid #000; text-align: center;">
+                                    <h3 style="margin: 0; font-size: 20px;">Net Salary: ${{salary.net_salary|floatformat:2}}</h3>
+                                </div>
+                                
+                                <!-- Signatures Table -->
+                                <table style="width: 100%; margin-top: 60px; border-collapse: collapse;">
+                                    <tr>
+                                        <td style="width: 30%; text-align: center; border-top: 1px solid #000; padding-top: 5px;">
+                                            <p style="margin: 5px 0;">Prepared By</p>
+                                        </td>
+                                        <td style="width: 30%; text-align: center; border-top: 1px solid #000; padding-top: 5px;">
+                                            <p style="margin: 5px 0;">Checked By</p>
+                                        </td>
+                                        <td style="width: 30%; text-align: center; border-top: 1px solid #000; padding-top: 5px;">
+                                            <p style="margin: 5px 0;">Received By</p>
+                                        </td>
+                                    </tr>
+                                </table>
+                                
+                                <!-- Footer -->
+                                <div style="margin-top: 60px; text-align: center; font-size: 12px;">
+                                    <p style="margin: 5px 0;">This is a computer generated salary slip and does not require signature.</p>
+                                    <p style="margin: 5px 0;">Generated on: {% now "F j, Y" %}</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="alert alert-info text-center">
+                            <h4><i class="icon fas fa-info-circle"></i> No salary information available yet.</h4>
+                            <p>Please contact your manager or HR department if you believe this is an error.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock content %}
+
+{% block custom_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+$(document).ready(function() {
+    // Show salary paid notification using toastr
+    var notification = $("#salary-notification");
+    if (notification.length > 0 && notification.data('show')) {
+        showToast(
+            notification.data('message'),
+            notification.data('title'),
+            notification.data('type')
+        );
+    }
+    
+    // PDF Generation with html2canvas and jsPDF
+    $('#download-pdf').click(function() {
+        // Show loading indicator
+        $('#loading-indicator').show();
+        
+        // Get content div
+        var pdfContent = document.getElementById('salary_pdf_content');
+        
+        // Make a clone of the content
+        var clone = pdfContent.cloneNode(true);
+        clone.style.display = 'block';
+        clone.style.position = 'absolute';
+        clone.style.left = '-9999px';
+        clone.style.top = '0';
+        clone.style.width = '800px';
+        clone.style.backgroundColor = 'white';
+        document.body.appendChild(clone);
+        
+        // Use html2canvas
+        html2canvas(clone, {
+            scale: 2,
+            backgroundColor: '#ffffff',
+            logging: false,
+            useCORS: true,
+            allowTaint: true
+        }).then(function(canvas) {
+            // Convert canvas to image
+            var imgData = canvas.toDataURL('image/jpeg', 1.0);
+            
+            // Create PDF
+            var { jsPDF } = window.jspdf;
+            var pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'a4'
+            });
+            
+            // Calculate image dimensions to fit on A4
+            var imgWidth = pdf.internal.pageSize.getWidth();
+            var imgHeight = (canvas.height * imgWidth) / canvas.width;
+            
+            // Add image to PDF
+            pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight);
+            
+            // Save PDF
+            pdf.save('Salary_Slip_{{employee_data.id}}_{{salary.month_year|date:"Y-m"}}.pdf');
+            
+            // Clean up
+            document.body.removeChild(clone);
+            $('#loading-indicator').hide();
+        }).catch(function(error) {
+            console.error('PDF generation error:', error);
+            alert('Error generating PDF. Please try again.');
+            $('#loading-indicator').hide();
+            
+            // Clean up in case of error
+            if (document.body.contains(clone)) {
+                document.body.removeChild(clone);
+            }
+        });
+    });
+});
+</script>
+{% endblock custom_js %}

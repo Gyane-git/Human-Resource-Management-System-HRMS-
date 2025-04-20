@@ -1,0 +1,74 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+{% block page_title %}{{ page_title }}{% endblock page_title %}
+{% block content %}
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-12">
+                <!-- Card for Task Assignment -->
+                <div class="card card-primary">
+                    <div class="card-header">
+                        <h3 class="card-title">{{ page_title }}</h3>
+                    </div>
+
+                    <!-- Task Assignment Form -->
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="card-body">
+
+                            <!-- Employee Selection -->
+                            <div class="form-group">
+                                <label for="employee">Select Employee</label>
+                                <select name="employee" class="form-control" id="employee" required>
+                                    <option value="">-- Select Employee --</option>
+                                    {% for employee in employees %}
+                                    <option value="{{ employee.id }}">{{ employee.admin.first_name }} {{ employee.admin.last_name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <!-- Task Title -->
+                            <div class="form-group">
+                                <label for="title">Task Title</label>
+                                <input type="text" name="title" class="form-control" id="title" placeholder="Enter Task Title" required>
+                            </div>
+
+                            <!-- Task Description -->
+                            <div class="form-group">
+                                <label for="description">Task Description</label>
+                                <textarea name="description" class="form-control" id="description" rows="3" placeholder="Enter Task Description" required></textarea>
+                            </div>
+
+                            <!-- Deadline -->
+                            <div class="form-group">
+                                <label for="deadline">Deadline</label>
+                                <input type="datetime-local" name="deadline" class="form-control" id="deadline" required>
+                            </div>
+
+                            <!-- Status -->
+                            <div class="form-group">
+                                <label for="status">Task Status</label>
+                                <select name="status" class="form-control" id="status" required>
+                                    <option value="Pending">Pending</option>
+                                    <option value="In Progress">In Progress</option>
+                                    <option value="Completed">Completed</option>
+                                </select>
+                            </div>
+
+                        </div>
+                        <!-- /.card-body -->
+
+                        <div class="card-footer">
+                            <button type="submit" class="btn btn-primary btn-block">Assign Task</button>
+                        </div>
+                    </form>
+                </div>
+                <!-- /.card -->
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock content %}

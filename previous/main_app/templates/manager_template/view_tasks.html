@@ -1,0 +1,117 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+{% block page_title %}{{ page_title }}{% endblock page_title %}
+{% block content %}
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-12">
+                <!-- Card for Assigned Tasks -->
+                <div class="card card-primary">
+                    <div class="card-header">
+                        <h3 class="card-title">{{ page_title }}</h3>
+                    </div>
+
+                    <!-- Card Body -->
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover">
+                                <thead class="thead-dark">
+                                    <tr>
+                                        <th>Title</th>
+                                        <th>Employee</th>
+                                        <th>Deadline</th>
+                                        <th>Status</th>
+                                        <th>Attachment</th>
+                                        <th>Rating</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for task in tasks %}
+                                    <tr>
+                                        <td>{{ task.title }}</td>
+                                        <td>{{ task.employee.admin.first_name }} {{ task.employee.admin.last_name }}</td>
+                                        <td>{{ task.deadline }}</td>
+                                        <td>
+                                            {% if task.status == "Pending" %}
+                                                <span class="badge badge-danger">Pending</span>
+                                            {% elif task.status == "In Progress" %}
+                                                <span class="badge badge-warning">In Progress</span>
+                                            {% else %}
+                                                <span class="badge badge-success">Completed</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if task.file %}
+                                                <a href="{{ task.file.url }}" class="btn btn-sm btn-primary" download>
+                                                    <i class="fas fa-download"></i> Download
+                                                </a>
+                                            {% else %}
+                                                <span class="badge badge-secondary">No File</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <select class="form-control task-rating" data-task-id="{{ task.id }}">
+                                                <option value="">Rate Task</option>
+                                                <option value="1" {% if task.rating == 1 %}selected{% endif %}>⭐ (Poor)</option>
+                                                <option value="2" {% if task.rating == 2 %}selected{% endif %}>⭐⭐ (Fair)</option>
+                                                <option value="3" {% if task.rating == 3 %}selected{% endif %}>⭐⭐⭐ (Good)</option>
+                                                <option value="4" {% if task.rating == 4 %}selected{% endif %}>⭐⭐⭐⭐ (Very Good)</option>
+                                                <option value="5" {% if task.rating == 5 %}selected{% endif %}>⭐⭐⭐⭐⭐ (Excellent)</option>
+                                            </select>
+                                            <p class="mt-2"><strong>Current Rating:</strong>  
+                                                {% if task.rating %}
+                                                    {% for _ in "12345"|slice:task.rating %}⭐{% endfor %}
+                                                {% else %}
+                                                    <span class="badge badge-secondary">Not Rated</span>
+                                                {% endif %}
+                                            </p>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="6" class="text-center">No tasks assigned yet.</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div> <!-- /.table-responsive -->
+                    </div> <!-- /.card-body -->
+                </div> <!-- /.card -->
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock content %}
+
+{% block custom_js %}
+<script>
+    $(document).ready(function () {
+        // Handle Task Rating Change
+        $(".task-rating").change(function () {
+            let taskId = $(this).data("task-id");
+            let rating = $(this).val();
+
+            $.ajax({
+                url: "{% url 'update_task_rating' %}",
+                type: "POST",
+                data: {
+                    task_id: taskId,
+                    rating: rating,
+                    csrfmiddlewaretoken: "{{ csrf_token }}"
+                },
+                success: function (response) {
+                    if (response.success) {
+                        alert("Task rating updated successfully!");
+                        location.reload();
+                    } else {
+                        alert("Failed to update rating.");
+                    }
+                }
+            });
+        });
+    });
+</script>
+{% endblock custom_js %}

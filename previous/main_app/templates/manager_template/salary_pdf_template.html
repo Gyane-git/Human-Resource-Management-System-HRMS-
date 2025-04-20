@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Salary Slip</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        p {
+            font-size: 16px;
+            line-height: 1.6;
+        }
+        strong {
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <h1>Salary Slip</h1>
+    <p><strong>Employee ID:</strong> {{ employee_id }}</p>
+    <p><strong>Base Salary:</strong> {{ base_salary }}</p>
+    <p><strong>Meal Allowance:</strong> {{ meal_allowance }}</p>
+    <p><strong>Transportation Allowance:</strong> {{ transportation_allowance }}</p>
+    <p><strong>Medical Allowance:</strong> {{ medical_allowance }}</p>
+    <p><strong>Tax (13%):</strong> {{ tax }}</p>
+    <p><strong>Insurance (5%):</strong> {{ insurance }}</p>
+    <p><strong>CTC:</strong> {{ ctc }}</p>
+</body>
+</html>

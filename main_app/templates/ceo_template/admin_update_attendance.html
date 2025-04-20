@@ -1,0 +1,458 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+{% block page_title %}Update Attendance{% endblock page_title %}
+
+{% block custom_css %}
+<style>
+    .card-header {
+        background-color: #007bff !important;
+        color: white !important;
+    }
+    
+    .btn-primary {
+        background-color: #007bff !important;
+    }
+    
+    .btn-success {
+        background-color: #28a745 !important;
+    }
+    
+    .info-box {
+        padding: 15px;
+        background-color: #28a745;
+        color: white;
+        border-radius: 5px;
+        margin-bottom: 20px;
+    }
+    
+    input[type="date"] {
+        padding: 10px;
+        border-radius: 4px;
+        border: 1px solid #ddd;
+    }
+    
+    /* For the date picker calendar */
+    input[type="date"]::-webkit-calendar-picker-indicator {
+        padding: 5px;
+        cursor: pointer;
+        border-radius: 3px;
+    }
+    
+    input[type="date"]::-webkit-calendar-picker-indicator:hover {
+        background-color: #f0f0f0;
+    }
+    
+    /* Table styles */
+    .table-attendance {
+        border-collapse: separate;
+        border-spacing: 0;
+        width: 100%;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        overflow: hidden;
+    }
+    
+    .table-attendance th {
+        background-color: #007bff;
+        color: white;
+        text-align: left;
+        padding: 12px;
+    }
+    
+    .table-attendance td {
+        padding: 12px;
+        border-bottom: 1px solid #ddd;
+    }
+    
+    .table-attendance tr:nth-child(even) {
+        background-color: #f9f9f9;
+    }
+    
+    .table-attendance tr:hover {
+        background-color: #f1f1f1;
+    }
+    
+    /* Custom checkbox */
+    .attendance-checkbox {
+        margin-right: 5px;
+        transform: scale(1.3);
+    }
+</style>
+{% endblock custom_css %}
+
+{% block content %}
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card card-primary">
+                    <div class="card-header">
+                        <h3 class="card-title">Update Attendance</h3>
+                    </div>
+
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label>Division</label>
+                            <select name="division" class="form-control" id="division">
+                                <option value="">-- Select Division --</option>
+                                {% for division in divisions %}
+                                <option value="{{division.id}}">{{division.name}}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div id="info_message" class="alert alert-success" style="display: none;">
+                            Please select a date and fetch managers to update attendance
+                        </div>
+                        
+                        <div id="error_message" class="alert alert-danger" style="display: none;"></div>
+                        
+                        <div class="form-group mt-3">
+                            <button type="button" id="fetch_attendance" class="btn btn-primary btn-block">
+                                <i class="fas fa-calendar-check"></i> Fetch Attendance Records
+                            </button>
+                        </div>
+
+                        <div id="attendance_block" style="display: none;">
+                            <div class="info-box">
+                                Please select a date and fetch employees to update attendance
+                            </div>
+                            
+                            <div class="form-group mt-4">
+                                <label>Attendance Date</label>
+                                <input type="date" class="form-control" name="attendance_date" id="attendance_date" required>
+                            </div>
+                            
+                            <div class="form-group mt-3">
+                                <button type="button" id="show_managers" class="btn btn-primary btn-block">
+                                    <i class="fas fa-users"></i> Show Managers for Selected Date
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div id="manager_data" class="mt-4"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock content %}
+
+{% block custom_js %}
+<script>
+    $(document).ready(function() {
+        // Get today's date in YYYY-MM-DD format for the date input
+        var today = new Date();
+        var dd = String(today.getDate()).padStart(2, '0');
+        var mm = String(today.getMonth() + 1).padStart(2, '0');
+        var yyyy = today.getFullYear();
+        today = yyyy + '-' + mm + '-' + dd;
+        
+        // Set the date input's default value to today and max value to today
+        $("#attendance_date").val(today);
+        $("#attendance_date").attr("max", today);
+        
+        // When the Fetch Attendance Records button is clicked
+        $("#fetch_attendance").click(function() {
+            var division = $("#division").val();
+            
+            if (division.length < 1) {
+                $("#error_message").html("Please select a division");
+                $("#error_message").show();
+                $("#info_message").hide();
+                $("#attendance_block").hide();
+                return false;
+            }
+            
+            // Show the date picker and button
+            $("#error_message").hide();
+            $("#info_message").show();
+            $("#attendance_block").show();
+        });
+        
+        // When the Show Managers button is clicked
+        $("#show_managers").click(function() {
+            var division = $("#division").val();
+            var date = $("#attendance_date").val();
+            
+            if (!date) {
+                $("#error_message").html("Please select a date");
+                $("#error_message").show();
+                return false;
+            }
+            
+            // Check if date is not in future
+            var selected_date = new Date(date);
+            var current_date = new Date();
+            current_date.setHours(0, 0, 0, 0);
+            
+            if (selected_date > current_date) {
+                $("#error_message").html("Cannot show attendance for future dates");
+                $("#error_message").show();
+                return false;
+            }
+            
+            // Show loading indicator
+            $("#manager_data").html('<div class="text-center mt-4"><i class="fas fa-spinner fa-spin fa-2x"></i><p class="mt-2">Loading managers...</p></div>');
+            
+            $.ajax({
+                url: "{% url 'get_managers' %}",
+                type: 'POST',
+                data: {
+                    division: division,
+                    date: date,
+                    csrfmiddlewaretoken: '{{ csrf_token }}'
+                },
+                success: function(response) {
+                    // Parse the response if it's a string
+                    if (typeof response === 'string') {
+                        try {
+                            response = JSON.parse(response);
+                        } catch (e) {
+                            console.error("Error parsing JSON response:", e);
+                            $("#manager_data").html('<div class="alert alert-danger">Error processing server response: ' + e.message + '</div>');
+                            return;
+                        }
+                    }
+                    
+                    // If we got an error response
+                    if (response && response.error) {
+                        $("#manager_data").html('<div class="alert alert-danger">' + response.error + '</div>');
+                        return;
+                    }
+                    
+                    if (!response || response.length < 1) {
+                        $("#manager_data").html('<div class="alert alert-warning">No managers found for the selected division</div>');
+                        return;
+                    }
+                    
+                    var div_data = `
+                        <div class="card">
+                            <div class="card-header">
+                                <h4 class="card-title">Update Attendance for ${$("#attendance_date").val()}</h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-attendance">
+                                        <thead>
+                                            <tr>
+                                                <th>Manager Name</th>
+                                                <th width="120">Attendance</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>`;
+                    
+                    for (var i = 0; i < response.length; i++) {
+                        var manager = response[i];
+                        div_data += `
+                            <tr>
+                                <td>${manager.name}</td>
+                                <td>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input attendance-checkbox" type="checkbox" name="manager_data[]" 
+                                               value="${manager.id}" id="checkbox${manager.id}" 
+                                               ${manager.status ? "checked" : ""}>
+                                        <label class="form-check-label" for="checkbox${manager.id}">
+                                            ${manager.status ? "Present" : "Absent"}
+                                        </label>
+                                    </div>
+                                </td>
+                            </tr>`;
+                    }
+                    
+                    div_data += `
+                                        </tbody>
+                                    </table>
+                                </div>
+                                
+                                <div class="form-group mt-4">
+                                    <button id="save_attendance" class="btn btn-success btn-block" type="button">
+                                        <i class="fas fa-save"></i> Save Attendance
+                                    </button>
+                                </div>
+                            </div>
+                        </div>`;
+                    
+                    $("#manager_data").html(div_data);
+                },
+                error: function(xhr, status, error) {
+                    console.error("AJAX Error:", status, error);
+                    var errorMessage = "Error fetching managers. Please try again.";
+                    
+                    // Try to extract error message from response
+                    if (xhr.responseJSON && xhr.responseJSON.error) {
+                        errorMessage = xhr.responseJSON.error;
+                    } else if (xhr.responseText) {
+                        try {
+                            var errorObj = JSON.parse(xhr.responseText);
+                            if (errorObj.error) {
+                                errorMessage = errorObj.error;
+                            }
+                        } catch (e) {
+                            // If not parseable as JSON and not too long, show it directly
+                            if (xhr.responseText.length < 100) {
+                                errorMessage = xhr.responseText;
+                            }
+                        }
+                    }
+                    
+                    $("#manager_data").html('<div class="alert alert-danger">Error fetching managers: ' + errorMessage + '</div>');
+                }
+            });
+        });
+        
+        // When the Save Attendance button is clicked
+        $(document).on('click', '#save_attendance', function() {
+            $(this).prop("disabled", true);
+            $(this).html("<i class='fas fa-spinner fa-spin'></i> Updating Attendance...");
+            
+            var manager_data = $("input[name='manager_data[]']").map(function() {
+                return {
+                    'id': $(this).val(),
+                    'status': $(this).is(":checked") ? 1 : 0
+                };
+            }).get();
+            
+            var attendance_date = $("#attendance_date").val();
+            var division = $("#division").val();
+            
+            // Log the data we're sending to the server
+            console.log("Updating attendance with data:", {
+                date: attendance_date,
+                division: division,
+                manager_ids: JSON.stringify(manager_data)
+            });
+            
+            $.ajax({
+                url: "{% url 'update_manager_attendance' %}",
+                type: 'POST',
+                data: {
+                    date: attendance_date,
+                    division: division,
+                    manager_ids: JSON.stringify(manager_data),
+                    csrfmiddlewaretoken: '{{ csrf_token }}'
+                },
+                success: function(response) {
+                    // Log the raw response for debugging
+                    console.log("Raw response:", response);
+                    console.log("Response type:", typeof response);
+                    
+                    // Check if response is a string that needs to be parsed
+                    if (typeof response === 'string') {
+                        try {
+                            // Try to parse as JSON
+                            console.log("Attempting to parse response as JSON");
+                            response = JSON.parse(response);
+                            console.log("Parsed response:", response);
+                        } catch (e) {
+                            // If it's a string and can't be parsed, check for 'OK'
+                            console.error("JSON parse error:", e);
+                            if (response === 'OK') {
+                                console.log("Response is 'OK', treating as success");
+                                response = { success: true, message: "Attendance updated successfully!" };
+                            } else {
+                                console.error("Response is not 'OK' and not valid JSON:", response);
+                                // Show the actual response for debugging
+                                $("#error_message").html("Server response: " + response);
+                                $("#error_message").show();
+                                $("#info_message").hide();
+                                $('#save_attendance').prop("disabled", false);
+                                $('#save_attendance').html("<i class='fas fa-save'></i> Save Attendance");
+                                return;
+                            }
+                        }
+                    }
+                    
+                    if (response.success) {
+                        $("#info_message").html(response.message || "Attendance updated successfully!");
+                        $("#info_message").show();
+                        $("#error_message").hide();
+                        
+                        // Show additional update details if available
+                        if (response.updated_count !== undefined) {
+                            var detailAlert = `
+                                <div class="alert alert-info alert-dismissible fade show mt-3" role="alert">
+                                    <strong>Update Details:</strong> 
+                                    Updated ${response.updated_count || 0} records 
+                                    (${response.created_count || 0} new, ${response.error_count || 0} errors)
+                                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>`;
+                            
+                            $(detailAlert).insertAfter("#info_message");
+                        }
+                        
+                        setTimeout(function() {
+                            // Reset to initial state after success message
+                            $("#attendance_block").hide();
+                            $("#manager_data").html('');
+                            $("#info_message").html("Please select a date and fetch managers to update attendance");
+                        }, 3000);
+                    } else {
+                        $("#error_message").html(response.message || "Error updating attendance. Please try again.");
+                        $("#error_message").show();
+                        $("#info_message").hide();
+                        
+                        // If there are detailed errors, show them
+                        if (response.errors && response.errors.length > 0) {
+                            var errorList = "";
+                            response.errors.forEach(function(error) {
+                                errorList += "<li>" + error + "</li>";
+                            });
+                            
+                            var detailAlert = `
+                                <div class="alert alert-danger alert-dismissible fade show mt-3" role="alert">
+                                    <strong>Error Details:</strong>
+                                    <ul>${errorList}</ul>
+                                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>`;
+                            
+                            $(detailAlert).insertAfter("#error_message");
+                        }
+                    }
+                    
+                    $('#save_attendance').prop("disabled", false);
+                    $('#save_attendance').html("<i class='fas fa-save'></i> Save Attendance");
+                },
+                error: function(xhr, status, error) {
+                    console.error("AJAX Error Status:", status);
+                    console.error("AJAX Error:", error);
+                    if (xhr.responseText) {
+                        console.error("Error Response Text:", xhr.responseText);
+                    }
+                    
+                    var errorMessage = "Error updating attendance. Please try again.";
+                    
+                    // Try to extract error message from response
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMessage = xhr.responseJSON.message;
+                    } else if (xhr.responseText) {
+                        try {
+                            var errorObj = JSON.parse(xhr.responseText);
+                            if (errorObj.message) {
+                                errorMessage = errorObj.message;
+                            }
+                        } catch (e) {
+                            // If not parseable as JSON and not too long, show it directly
+                            if (xhr.responseText.length < 100 && xhr.responseText.trim()) {
+                                errorMessage = xhr.responseText;
+                            }
+                        }
+                    }
+                    
+                    $("#error_message").html(errorMessage);
+                    $("#error_message").show();
+                    $("#info_message").hide();
+                    
+                    $('#save_attendance').prop("disabled", false);
+                    $('#save_attendance').html("<i class='fas fa-save'></i> Save Attendance");
+                }
+            });
+        });
+    });
+</script>
+{% endblock custom_js %}

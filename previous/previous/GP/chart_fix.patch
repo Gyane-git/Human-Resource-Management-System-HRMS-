@@ -1,0 +1,48 @@
+// Corrected Chart.js configuration for bar chart
+var barChart = new Chart(barCtx, {
+    type: 'bar',
+    data: {
+        labels: departmentList,
+        datasets: [{
+            label: "Attendance",
+            backgroundColor: colors,
+            hoverBackgroundColor: colors,
+            borderWidth: 1,
+            borderColor: colors,
+            data: attendanceList
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            xAxes: [{
+                gridLines: {
+                    display: true
+                },
+                ticks: {
+                    fontColor: '#73879C'
+                }
+            }],
+            yAxes: [{
+                ticks: {
+                    beginAtZero: true,
+                    fontColor: '#73879C',
+                    max: 3.5
+                },
+                gridLines: {
+                    color: 'rgba(153, 153, 153, 0.1)',
+                    display: true
+                }
+            }]
+        },
+        legend: {
+            display: true,
+            position: 'bottom',
+            labels: {
+                fontColor: '#73879C',
+                boxWidth: 20
+            }
+        }
+    }
+}); 

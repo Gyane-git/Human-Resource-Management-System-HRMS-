@@ -1,0 +1,131 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+{% block page_title %}{{ page_title }}{% endblock page_title %}
+
+{% block content %}
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-12">
+                <!-- Card for Employee Tasks -->
+                <div class="card card-primary">
+                    <div class="card-header">
+                        <h3 class="card-title">{{ page_title }}</h3>
+                    </div>
+
+                    <!-- Card Body -->
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover">
+                                <thead class="thead-dark">
+                                    <tr>
+                                        <th>Title</th>
+                                        <th>Description</th>
+                                        <th>Deadline</th>
+                                        <th>Status</th>
+                                        <th>Attach File</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for task in tasks %}
+                                    <tr>
+                                        <td>{{ task.title }}</td>
+                                        <td>{{ task.description }}</td>
+                                        <td>{{ task.deadline }}</td>
+                                        <td>
+                                            <!-- Task Status Dropdown -->
+                                            <select class="form-control status-dropdown" data-task-id="{{ task.id }}">
+                                                <option value="Pending" {% if task.status == "Pending" %}selected{% endif %}>Pending</option>
+                                                <option value="In Progress" {% if task.status == "In Progress" %}selected{% endif %}>In Progress</option>
+                                                <option value="Completed" {% if task.status == "Completed" %}selected{% endif %}>Completed</option>
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <form class="upload-form" data-task-id="{{ task.id }}" enctype="multipart/form-data">
+                                                <div class="input-group">
+                                                    <input type="file" name="task_file" class="form-control">
+                                                    <button type="submit" class="btn btn-primary">Upload</button>
+                                                </div>
+                                            </form>
+                                            {% if task.file %}
+                                                <a href="{{ task.file.url }}" class="btn btn-sm btn-success mt-2" download>
+                                                    <i class="fas fa-download"></i> Download
+                                                </a>
+                                            {% else %}
+                                                <span class="badge badge-secondary">No File</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="5" class="text-center">No tasks assigned yet.</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div> <!-- /.table-responsive -->
+                    </div> <!-- /.card-body -->
+                </div> <!-- /.card -->
+            </div>
+        </div>
+    </div>
+</section>
+
+
+{% endblock content %}
+
+{% block custom_js %}
+<script>
+    $(document).ready(function () {
+        // Handle Task Status Change
+        $(".status-dropdown").change(function () {
+            let taskId = $(this).data("task-id");
+            let newStatus = $(this).val();
+
+            $.ajax({
+                url: "{% url 'update_task_status' %}",
+                type: "POST",
+                data: {
+                    task_id: taskId,
+                    status: newStatus,
+                    csrfmiddlewaretoken: "{{ csrf_token }}"
+                },
+                success: function (response) {
+                    if (response.success) {
+                        alert("Task status updated successfully!");
+                        location.reload();
+                    } else {
+                        alert("Failed to update task status.");
+                    }
+                }
+            });
+        });
+
+        // Handle File Upload
+        $(".upload-form").submit(function (e) {
+            e.preventDefault();
+            let form = $(this);
+            let taskId = form.data("task-id");
+            let formData = new FormData(this);
+            formData.append("task_id", taskId);
+            formData.append("csrfmiddlewaretoken", "{{ csrf_token }}");
+
+            $.ajax({
+                url: "{% url 'upload_task_file' %}",
+                type: "POST",
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function (response) {
+                    if (response.success) {
+                        alert("File uploaded successfully!");
+                        location.reload();
+                    } else {
+                        alert("File upload failed.");
+                    }
+                }
+            });
+        });
+    });
+</script>
+{% endblock custom_js %}

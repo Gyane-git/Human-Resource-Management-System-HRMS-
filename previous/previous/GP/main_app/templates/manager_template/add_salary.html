@@ -1,0 +1,37 @@
+<!-- Add error alert for displaying messages -->
+<div id="error-message" class="alert alert-danger" style="display: none;"></div>
+
+<!-- Inside the AJAX call for saving salary -->
+$.ajax({
+    url: "{% url 'save_salary' %}",
+    type: 'POST',
+    data: formData,
+    dataType: 'json',
+    success: function(response) {
+        $('#loading').hide();
+        // Show success message
+        $("#message").html('<div class="alert alert-success">Salary saved successfully!</div>');
+        setTimeout(function() {
+            $("#message").html('');
+        }, 5000);
+        // Reset form
+        $("#salaryForm")[0].reset();
+        // Reset employee select
+        $('#employee').val('').trigger('change');
+    },
+    error: function(xhr) {
+        $('#loading').hide();
+        var errorMessage = 'Failed to save salary. Please try again.';
+        
+        // If we have a more specific error message from the server, use it
+        if (xhr.responseJSON && xhr.responseJSON.message) {
+            errorMessage = xhr.responseJSON.message;
+        }
+        
+        // Show error message
+        $("#error-message").text(errorMessage).show();
+        setTimeout(function() {
+            $("#error-message").hide();
+        }, 5000);
+    }
+}); 

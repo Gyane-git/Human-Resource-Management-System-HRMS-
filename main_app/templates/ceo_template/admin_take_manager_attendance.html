@@ -1,0 +1,335 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+{% block page_title %}Take Manager Attendance{% endblock page_title %}
+
+{% block content %}
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card card-primary">
+                    <div class="card-header">
+                        <h3 class="card-title">Take Manager Attendance</h3>
+                    </div>
+
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label>Division</label>
+                            <select name="division" class="form-control" id="division">
+                                <option value="">-- Select Division --</option>
+                                {% for division in divisions %}
+                                <option value="{{division.id}}">{{division.name}}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="form-group mt-4">
+                            <button type="button" id="fetch_managers" class="btn btn-primary btn-block">
+                                <i class="fas fa-users"></i> Fetch Managers
+                            </button>
+                        </div>
+
+                        <div id="manager_data" class="mt-4"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock content %}
+
+{% block custom_js %}
+<script>
+    $(document).ready(function () {
+        $("#fetch_managers").click(function () {
+            var division = $("#division").val();
+            $("#manager_data").html(null);
+            
+            if (division.length == 0) {
+                showToast("Please select a division", "Error", "error");
+                return false;
+            }
+            
+            // Show loading indicator
+            $("#manager_data").html('<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Loading managers...</div>');
+            
+            $.ajax({
+                url: "{% url 'get_managers' %}",
+                type: 'POST',
+                data: {
+                    division: division,
+                    csrfmiddlewaretoken: '{{ csrf_token }}'
+                },
+                success: function (response) {
+                    // Check if response is already an object
+                    if (typeof response === 'string') {
+                        try {
+                            response = JSON.parse(response);
+                        } catch (e) {
+                            console.error("Error parsing JSON response:", e);
+                            $("#manager_data").html('<div class="alert alert-danger">Error processing server response</div>');
+                            showToast("Error processing server response", "Error", "error");
+                            return;
+                        }
+                    }
+                    
+                    if (!response || response.length < 1) {
+                        $("#manager_data").html('<div class="alert alert-warning">No managers found for the selected division</div>');
+                        showToast("No managers found for the selected division", "Warning", "warning");
+                        return;
+                    }
+                    
+                    // Get current date for max attribute
+                    var today = new Date();
+                    var dd = String(today.getDate()).padStart(2, '0');
+                    var mm = String(today.getMonth() + 1).padStart(2, '0');
+                    var yyyy = today.getFullYear();
+                    var currentDate = yyyy + '-' + mm + '-' + dd;
+                    
+                    var div_data = `
+                        <div class="card">
+                            <div class="card-header bg-primary text-white">
+                                <h4 class="card-title">Take Attendance</h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <label>Attendance Date</label>
+                                    <input type="date" class="form-control" name="attendance_date" id="attendance_date" 
+                                           value="${currentDate}" min="${currentDate}" max="${currentDate}" required readonly>
+                                    <small class="form-text text-muted">You can only mark attendance for today (${dd}/${mm}/${yyyy})</small>
+                                </div>
+                                
+                                <div class="table-responsive mt-4">
+                                    <table class="table table-bordered table-striped">
+                                        <thead class="thead-dark">
+                                            <tr>
+                                                <th>Manager Name</th>
+                                                <th width="120">Attendance</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>`;
+                    
+                    for (var i = 0; i < response.length; i++) {
+                        var manager = response[i];
+                        div_data += `
+                            <tr>
+                                <td>${manager.name}</td>
+                                <td>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="checkbox" name="manager_data[]" 
+                                               value="${manager.id}" id="checkbox${manager.id}" checked>
+                                        <label class="form-check-label" for="checkbox${manager.id}">Present</label>
+                                    </div>
+                                </td>
+                            </tr>`;
+                    }
+                    
+                    div_data += `
+                                        </tbody>
+                                    </table>
+                                </div>
+                                
+                                <div class="form-group mt-4">
+                                    <button id="save_attendance" class="btn btn-success btn-block" type="button">
+                                        <i class="fas fa-save"></i> Save Attendance
+                                    </button>
+                                </div>
+                            </div>
+                        </div>`;
+                    
+                    $("#manager_data").html(div_data);
+                },
+                error: function (xhr, status, error) {
+                    console.error("AJAX Error:", status, error);
+                    $("#manager_data").html('<div class="alert alert-danger">Error fetching managers: ' + error + '</div>');
+                    showToast("Error fetching managers: " + error, "Error", "error");
+                }
+            });
+        });
+
+        $(document).on('click', '#save_attendance', function () {
+            $(this).prop("disabled", true);
+            $(this).html("<i class='fas fa-spinner fa-spin'></i> Saving Attendance Data...");
+            
+            // Get attendance date
+            var attendance_date = $('#attendance_date').val();
+            if (!attendance_date) {
+                showToast("Please select a date", "Error", "error");
+                $(this).prop("disabled", false);
+                $(this).html("<i class='fas fa-save'></i> Save Attendance");
+                return false;
+            }
+            
+            // Check if date is not in future - compare only the date part (yyyy-mm-dd)
+            var selected_date = new Date(attendance_date);
+            var current_date = new Date();
+            
+            // Reset time parts to compare dates only
+            selected_date.setHours(0, 0, 0, 0);
+            current_date.setHours(0, 0, 0, 0);
+            
+            if (selected_date > current_date) {
+                showToast("Cannot mark attendance for future dates", "Error", "error");
+                $(this).prop("disabled", false);
+                $(this).html("<i class='fas fa-save'></i> Save Attendance");
+                return false;
+            }
+            
+            // If it's today's date, allow it regardless of time
+            var is_today = selected_date.getDate() === current_date.getDate() && 
+                          selected_date.getMonth() === current_date.getMonth() && 
+                          selected_date.getFullYear() === current_date.getFullYear();
+            
+            if (!is_today) {
+                // Allow only today's date
+                showToast("You can only mark attendance for today", "Error", "error");
+                $(this).prop("disabled", false);
+                $(this).html("<i class='fas fa-save'></i> Save Attendance");
+                return false;
+            }
+            
+            // Get division
+            var division = $("#division").val();
+            if (!division) {
+                showToast("Please select a division", "Error", "error");
+                $(this).prop("disabled", false);
+                $(this).html("<i class='fas fa-save'></i> Save Attendance");
+                return false;
+            }
+            
+            // Build manager data array
+            var manager_data = [];
+            $("input[name='manager_data[]']").each(function() {
+                manager_data.push({
+                    'id': $(this).val(),
+                    'status': $(this).is(":checked") ? 1 : 0
+                });
+            });
+            
+            if (manager_data.length === 0) {
+                showToast("No managers selected", "Error", "error");
+                $(this).prop("disabled", false);
+                $(this).html("<i class='fas fa-save'></i> Save Attendance");
+                return false;
+            }
+            
+            // Print debug info to console
+            console.log('Saving manager attendance with the following data:');
+            console.log('Date:', attendance_date);
+            console.log('Division:', division);
+            console.log('Manager Count:', manager_data.length);
+            console.log('First few managers:', manager_data.slice(0, 3));
+            console.log('JSON payload:', JSON.stringify(manager_data));
+            
+            // AJAX request to save attendance
+            $.ajax({
+                url: "{% url 'save_manager_attendance' %}",
+                type: 'POST',
+                data: {
+                    date: attendance_date,
+                    manager_ids: JSON.stringify(manager_data),
+                    division: division,
+                    csrfmiddlewaretoken: '{{ csrf_token }}'
+                },
+                success: function(response) {
+                    console.log("Raw response:", response);
+                    console.log("Response type:", typeof response);
+                    
+                    // Check if response is a string that needs to be parsed
+                    if (typeof response === 'string') {
+                        try {
+                            // Try to parse as JSON
+                            console.log("Attempting to parse response as JSON");
+                            response = JSON.parse(response);
+                            console.log("Parsed response:", response);
+                        } catch (e) {
+                            // If it's a string and can't be parsed, check for 'OK'
+                            console.error("JSON parse error:", e);
+                            if (response === 'OK') {
+                                console.log("Response is 'OK', treating as success");
+                                response = { success: true, message: "Attendance saved successfully!" };
+                            } else {
+                                console.error("Response is not 'OK' and not valid JSON:", response);
+                                showToast("Server Error: " + response, "Error", "error");
+                                $('#save_attendance').prop("disabled", false);
+                                $('#save_attendance').html("<i class='fas fa-save'></i> Save Attendance");
+                                return;
+                            }
+                        }
+                    }
+                    
+                    if (response.success) {
+                        showToast(response.message || "Attendance saved successfully", "Success", "success");
+                        
+                        // Also show an alert that stays on screen
+                        var successAlert = `<div class="alert alert-success alert-dismissible fade show mt-3" role="alert">
+                            <strong>Success!</strong> ${response.message || "Attendance saved successfully"}
+                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>`;
+                        
+                        $(successAlert).insertBefore("#manager_data");
+                        
+                        setTimeout(function() {
+                            location.reload();
+                        }, 3000);
+                    } else {
+                        showToast(response.message || "Error saving attendance. Please try again.", "Error", "error");
+                        
+                        // Also show an alert that stays on screen
+                        var errorAlert = `<div class="alert alert-danger alert-dismissible fade show mt-3" role="alert">
+                            <strong>Error!</strong> ${response.message || "Error saving attendance. Please try again."}
+                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>`;
+                        
+                        $(errorAlert).insertBefore("#manager_data");
+                        
+                        $('#save_attendance').prop("disabled", false);
+                        $('#save_attendance').html("<i class='fas fa-save'></i> Save Attendance");
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error("AJAX Error Status:", status);
+                    console.error("AJAX Error:", error);
+                    console.error("Status Code:", xhr.status);
+                    
+                    if (xhr.responseText) {
+                        console.error("Error Response Text:", xhr.responseText);
+                        try {
+                            var errorJson = JSON.parse(xhr.responseText);
+                            console.error("Parsed Error:", errorJson);
+                        } catch (e) {
+                            console.error("Could not parse error response as JSON");
+                        }
+                    }
+                    
+                    var errorMessage = "Error saving attendance. Please try again.";
+                    
+                    // Try to extract message from response
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMessage = xhr.responseJSON.message;
+                    } else if (xhr.responseText) {
+                        try {
+                            var errorObj = JSON.parse(xhr.responseText);
+                            if (errorObj.message) {
+                                errorMessage = errorObj.message;
+                            }
+                        } catch (e) {
+                            if (xhr.responseText.length < 100) {
+                                errorMessage = xhr.responseText;
+                            }
+                        }
+                    }
+                    
+                    showToast("Error saving attendance: " + errorMessage, "Error", "error");
+                    $('#save_attendance').prop("disabled", false);
+                    $('#save_attendance').html("<i class='fas fa-save'></i> Save Attendance");
+                }
+            });
+        });
+    });
+</script>
+{% endblock custom_js %} 

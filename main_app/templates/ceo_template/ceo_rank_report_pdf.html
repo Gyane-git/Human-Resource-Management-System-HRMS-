@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Employee Ranking Report</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        h1, h2 {
+            color: #333;
+            text-align: center;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .report-info {
+            margin-bottom: 20px;
+            text-align: right;
+            font-size: 14px;
+            color: #666;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .top-performer {
+            background-color: #e8f5e9 !important;
+            font-weight: bold;
+        }
+        .rank {
+            font-weight: bold;
+            text-align: center;
+        }
+        .footer {
+            margin-top: 40px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Employee Performance Ranking Report</h1>
+        <h2>{{ month }} {{ year }}</h2>
+    </div>
+    
+    <div class="report-info">
+        <p>Generated on: {{ generated_on }}</p>
+    </div>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Rank</th>
+                <th>Employee Name</th>
+                <th>Department</th>
+                <th>Attendance</th>
+                <th>Tasks</th>
+                <th>Rating</th>
+                <th>Overall Score</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in employee_rankings %}
+            <tr {% if forloop.first %}class="top-performer"{% endif %}>
+                <td class="rank">{{ forloop.counter }}</td>
+                <td>{{ item.employee.admin.first_name }} {{ item.employee.admin.last_name }}</td>
+                <td>{{ item.employee.department.name }}</td>
+                <td>{{ item.present_days }}/{{ item.present_days|add:item.absent_days }} days 
+                    ({{ item.attendance_percentage|floatformat:1 }}%)</td>
+                <td>{{ item.completed_tasks }}/{{ item.total_tasks }} completed</td>
+                <td>{{ item.average_rating|floatformat:1 }}/5</td>
+                <td><strong>{{ item.score|floatformat:1 }}</strong></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <div class="footer">
+        <p>This report is system-generated and provides a ranking of employees based on attendance and task performance.</p>
+        <p>Score calculation: 40% attendance + 60% task rating</p>
+    </div>
+</body>
+</html> 

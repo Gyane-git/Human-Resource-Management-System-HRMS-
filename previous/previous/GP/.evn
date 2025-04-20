@@ -1,0 +1,13 @@
+# DATABASE_URL = 
+# SECRET_KEY = 
+
+# # Email Credentials
+# EMAIL_ADDRESS = 
+# EMAIL_PASSWORD = "happyhapy21"
+
+SECRET_KEY="im-rJfyg6vRSnospUopqtYMVvO8DP9NqTXWZSW7IOTL97ifuMNM8LzbZAbjYSwxlGXc"
+DEBUG=True
+#ALLOWED_HOSTS=127.0.0.1:8000,localhost
+EMAIL_HOST_USER="alpen@750gmail.com"
+EMAIL_HOST_PASSWORD="zwwj zzmm coft yabl"
+DATABASE_URL="postgres://gyane:Hello2143@localhost:5432/my_database"

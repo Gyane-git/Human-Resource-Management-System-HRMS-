@@ -1,0 +1,80 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+{% block page_title %}My Rank Report{% endblock page_title %}
+{% block content %}
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card card-primary">
+                    <div class="card-header">
+                        <h3 class="card-title">My Performance Report</h3>
+                    </div>
+
+                    <div class="card-body">
+                        <form id="rankReportForm" method="post" action="{% url 'employee_rank_report' %}">
+                            {% csrf_token %}
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label>Select Month</label>
+                                        <select class="form-control" name="month" required>
+                                            <option value="">-- Select Month --</option>
+                                            {% for month in months %}
+                                                <option value="{{ month.0 }}" {% if current_month == month.0 %}selected{% endif %}>{{ month.1 }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label>Select Year</label>
+                                        <select class="form-control" name="year" required>
+                                            <option value="">-- Select Year --</option>
+                                            {% for year in years %}
+                                                <option value="{{ year }}" {% if current_year == year %}selected{% endif %}>{{ year }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group" style="margin-top: 32px;">
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-file-pdf"></i> Generate My Report
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+
+                        {% if error_message %}
+                        <div class="mt-4">
+                            <div class="alert alert-danger">
+                                <h5><i class="icon fas fa-exclamation-triangle"></i> Error</h5>
+                                <p>{{ error_message }}</p>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock content %}
+
+{% block custom_js %}
+<script>
+$(document).ready(function() {
+    // No need for custom AJAX handling, using direct form submission
+    $("#rankReportForm").on('submit', function() {
+        // Show loading indicator
+        var submitBtn = $(this).find('button[type="submit"]');
+        submitBtn.html('<i class="fas fa-spinner fa-spin"></i> Generating...');
+        submitBtn.prop('disabled', true);
+    });
+});
+</script>
+{% endblock custom_js %}

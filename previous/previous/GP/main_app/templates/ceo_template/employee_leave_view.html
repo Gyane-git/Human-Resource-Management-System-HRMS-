@@ -1,0 +1,135 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+{% block page_title %}{{ page_title }}{% endblock page_title %}
+
+{% block content %}
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-12">
+                <!-- general form elements -->
+                <div class="card card-primary">
+                    <div class="card-header">
+                        <h3 class="card-title">{{ page_title }}</h3>
+                    </div>
+
+                    <div class="table card-body">
+                        <table class="table table-bordered">
+                            <tr>
+                                <th>SN</th>
+                                <th>Employee</th>
+                                <th>Division</th>
+                                <th>Leave Type</th>
+                                <th>From Date</th>
+                                <th>To Date</th>
+                                <th>Message</th>
+                                <th>Submitted On</th>
+                                <th>Action</th>
+                            </tr>
+                            {% for leave in allLeave %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>{{ leave.employee }}</td>
+                                    <td>{{ leave.employee.division }}</td>
+                                    <td>
+                                        {% if leave.leave_type == 'sick' %}
+                                            <span class="badge badge-danger">Sick Leave</span>
+                                        {% else %}
+                                            <span class="badge badge-info">Annual Leave</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ leave.date_from }}</td>
+                                    <td>{{ leave.date_to }}</td>
+                                    <td>{{ leave.message }}</td>
+                                    <td>{{ leave.created_at }}</td>
+                                    <td>
+                                        {% if leave.status == 0 %}
+                                            <button data-toggle="modal" data-target="#reply_modal" value="{{ leave.id }}" class="btn btn-primary reply_open_modal">Reply</button>
+                                        {% elif leave.status == -1 %}
+                                            <span class="badge badge-danger">Rejected</span>
+                                        {% else %}
+                                            <span class="badge badge-success">Approved</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </table>
+                    </div>
+                </div><!-- /.card -->
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Modal -->
+<div class="modal fade" id="reply_modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h4 class="modal-title" id="myModalLabel">Reply to Leave Request</h4>
+            </div>
+
+            <div class="modal-body">
+                <input type="hidden" id="id">
+                <p>Reply to <span id="reply_name"></span>'s leave request</p>
+                <select id="reply_leave_status" class="form-control">
+                    <option value="">-- Select --</option>
+                    <option value="1">Approve</option>
+                    <option value="-1">Reject</option>
+                </select>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                <button id="reply_btn" class="btn btn-success btn-block">Submit</button>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
+{% endblock content %}
+
+{% block custom_js %}
+<script>
+    $(document).ready(function () {
+        $(".reply_open_modal").click(function () {
+            var id = $(this).val();
+            var name = $(this).parents("tr").children("td:eq(1)").text();
+            $("#reply_name").text(name);
+            $("#id").val(id);
+        });
+
+        $("#reply_btn").on("click", function () {
+            var id = $("#id").val();
+            var status = $("#reply_leave_status").val();
+
+            if (status === '1' || status === '-1') {
+                $.ajax({
+                    url: "{% url 'view_employee_leave' %}",  // Ensure this URL is correct
+                    type: "POST",  // ✅ Must be POST
+                    data: {
+                        id: id,
+                        status: status,
+                        csrfmiddlewaretoken: "{{ csrf_token }}"
+                    },
+                    success: function (response) {
+                        if (response.status === "True") {
+                            alert("Leave Response Has Been Saved and Email Sent!");
+                            location.reload();  // Refresh the page after update
+                        } else {
+                            alert("Reply Could Not Be Sent: " + response.message);
+                        }
+                    },
+                    error: function () {
+                        alert("Error Occurred while processing the request.");
+                    }
+                });
+            } else {
+                alert("Choose a valid response");
+            }
+        });
+    });
+</script>
+{% endblock custom_js %}

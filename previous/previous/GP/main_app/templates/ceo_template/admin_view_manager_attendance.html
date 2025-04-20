@@ -1,0 +1,212 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+{% block page_title %}View Manager Attendance{% endblock page_title %}
+{% block custom_css %}
+<style>
+.attendance_div_red{
+    padding: 10px;
+    background: #f44336;
+    border: 3px solid white;
+    text-align: center;
+    color: #fff;
+    border-radius: 30px;
+    box-shadow: 1px 1px 1px grey;
+    margin: 5px;
+}
+.attendance_div_green{
+    padding: 10px;
+    background: #4CAF50;
+    border: 3px solid white;
+    text-align: center;
+    color: #fff;
+    border-radius: 30px;
+    box-shadow: 1px 1px 1px grey;
+    margin: 5px;
+}
+</style>
+{% endblock custom_css %}
+
+{% block content %}
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card card-primary">
+                    <div class="card-header">
+                        <h3 class="card-title">View Manager Attendance</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label>Select Division</label>
+                            <select id="division" class="form-control">
+                                <option value="">-- Select Division --</option>
+                                {% for division in divisions %}
+                                <option value="{{division.id}}">{{division.name}}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Select Manager</label>
+                            <select id="manager" class="form-control" disabled>
+                                <option value="">-- First Select Division --</option>
+                            </select>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-lg-6">
+                                <div class="form-group">
+                                    <label>Start Date</label>
+                                    <input type="date" class="form-control" name="start_date" id="start_date">
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div class="form-group">
+                                    <label>End Date</label>
+                                    <input type="date" class="form-control" name="end_date" id="end_date">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group mt-4">
+                            <button type="button" id="fetch_attendance" class="btn btn-primary btn-block">
+                                <i class="fas fa-search"></i> Fetch Attendance Data
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="card-footer">
+                        <div class="row" id="attendance_data"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock content %}
+
+{% block custom_js %}
+<script>
+    $(document).ready(function () {
+        // Load managers when division is selected
+        $("#division").change(function() {
+            var division = $(this).val();
+            if (division === "") {
+                $("#manager").html('<option value="">-- First Select Division --</option>');
+                $("#manager").prop("disabled", true);
+                return;
+            }
+            
+            $.ajax({
+                url: "{% url 'get_managers' %}",
+                type: 'POST',
+                data: {
+                    division: division,
+                    csrfmiddlewaretoken: '{{ csrf_token }}'
+                },
+                success: function(response) {
+                    if (typeof response === 'string') {
+                        try {
+                            response = JSON.parse(response);
+                        } catch (e) {
+                            console.error("Error parsing JSON response:", e);
+                            return;
+                        }
+                    }
+                    
+                    var html = '<option value="">-- Select Manager --</option><option value="all">All Managers</option>';
+                    for (var i = 0; i < response.length; i++) {
+                        html += '<option value="' + response[i].id + '">' + response[i].name + '</option>';
+                    }
+                    
+                    $("#manager").html(html);
+                    $("#manager").prop("disabled", false);
+                },
+                error: function(xhr, status, error) {
+                    console.error("AJAX Error:", status, error);
+                    showToast("Error fetching managers: " + error, "Error", "error");
+                }
+            });
+        });
+        
+        // Fetch attendance data
+        $("#fetch_attendance").click(function () {
+            var division = $("#division").val();
+            var manager = $("#manager").val();
+            var start_date = $("#start_date").val();
+            var end_date = $("#end_date").val();
+            
+            if (division.length == 0) {
+                showToast("Please select a division", "Error", "error");
+                return false;
+            }
+            
+            if (manager.length == 0) {
+                showToast("Please select a manager", "Error", "error");
+                return false;
+            }
+            
+            if (start_date.length == 0 || end_date.length == 0) {
+                showToast("Please select date range", "Error", "error");
+                return false;
+            }
+            
+            // Show loading indicator
+            $("#attendance_data").html('<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Loading attendance data...</div>');
+            
+            $.ajax({
+                url: "{% url 'view_manager_attendance_data' %}",
+                type: 'POST',
+                data: {
+                    division: division,
+                    manager: manager,
+                    start_date: start_date,
+                    end_date: end_date,
+                    csrfmiddlewaretoken: '{{ csrf_token }}'
+                },
+                success: function(response) {
+                    if (typeof response === 'string') {
+                        try {
+                            response = JSON.parse(response);
+                        } catch (e) {
+                            console.error("Error parsing JSON response:", e);
+                            $("#attendance_data").html('<div class="alert alert-danger">Error processing server response</div>');
+                            showToast("Error processing server response", "Error", "error");
+                            return;
+                        }
+                    }
+                    
+                    if (!response || response.length < 1) {
+                        $("#attendance_data").html('<div class="alert alert-warning">No attendance data found for the selected criteria</div>');
+                        return;
+                    }
+                    
+                    var div_data = "";
+                    
+                    for (var i = 0; i < response.length; i++) {
+                        var record = response[i];
+                        var cssClass = record.status ? "attendance_div_green" : "attendance_div_red";
+                        var status = record.status ? "Present" : "Absent";
+                        
+                        div_data += `
+                            <div class="col-lg-3">
+                                <div class="${cssClass}">
+                                    <b>${record.date}</b><br>
+                                    ${record.manager_name}<br>
+                                    ${status}
+                                </div>
+                            </div>`;
+                    }
+                    
+                    $("#attendance_data").html(div_data);
+                },
+                error: function(xhr, status, error) {
+                    console.error("AJAX Error:", status, error);
+                    $("#attendance_data").html('<div class="alert alert-danger">Error fetching attendance data: ' + error + '</div>');
+                    showToast("Error fetching attendance data: " + error, "Error", "error");
+                }
+            });
+        });
+    });
+</script>
+{% endblock custom_js %} 

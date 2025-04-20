@@ -1,0 +1,382 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+{% block page_title %}{{page_title}}{% endblock page_title %}
+{% block content %}
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-12">
+                <!-- Add a back button at the top -->
+                <a href="{% url 'manager_add_salary' %}" class="btn btn-secondary mb-3">
+                    <i class="fas fa-arrow-left"></i> Back to Salary List
+                </a>
+                
+                <div class="card card-primary">
+                    <div class="card-header">
+                        <h3 class="card-title">{{page_title}}</h3>
+                    </div>
+                    <form method="POST" id="salary_edit_form">
+                        {% csrf_token %}
+                        {% if messages %}
+                        <div class="card-body pb-0">
+                            {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }}">
+                                {{ message }}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        <div class="card-body">
+                            <!-- Hidden field for salary ID if in edit mode -->
+                            {% if edit_mode %}
+                            <input type="hidden" name="salary_id" value="{{ salary_id }}">
+                            {% endif %}
+                            
+                            <!-- Department Selection -->
+                            <div class="form-group">
+                                <label>Department</label>
+                                <select name="department" class="form-control" id="id_department" {% if edit_mode %}disabled{% else %}required{% endif %}>
+                                    <option value="">Select Department</option>
+                                    {% for department in departments %}
+                                    <option value="{{department.id}}" {% if form.department.value == department.id %}selected{% endif %}>
+                                        {{department.name}}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <!-- Employee Selection -->
+                            <div class="form-group">
+                                <label>Employee</label>
+                                <select name="employee" class="form-control" id="id_employee" {% if edit_mode %}disabled{% else %}required{% endif %}>
+                                    <option value="">Select Employee</option>
+                                    {% if employees %}
+                                        {% for employee in employees %}
+                                        <option value="{{employee.id}}" {% if form.employee.value == employee.id %}selected{% endif %}>
+                                            {{employee.admin.last_name}}, {{employee.admin.first_name}}
+                                        </option>
+                                        {% endfor %}
+                                    {% endif %}
+                                </select>
+                                {% if edit_mode %}
+                                <!-- Hidden field to preserve the employee ID when the select is disabled -->
+                                <input type="hidden" name="employee" value="{{ form.employee.value }}">
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Month/Year Selection -->
+                            <div class="form-group">
+                                <label>Salary Month/Year</label>
+                                <input type="month" name="month_year" class="form-control" id="id_month_year" 
+                                       value="{{ form.month_year.value|date:'Y-m' }}" {% if edit_mode %}disabled{% else %}required{% endif %}>
+                                {% if edit_mode %}
+                                <!-- Hidden field to preserve the month/year when the input is disabled -->
+                                <input type="hidden" name="month_year" value="{{ form.month_year.value|date:'Y-m' }}">
+                                {% endif %}
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <!-- Basic Salary -->
+                                    <div class="form-group">
+                                        <label>Basic Salary</label>
+                                        <input type="number" name="basic_salary" class="form-control" 
+                                               id="id_basic_salary" step="0.01" min="0"
+                                               value="{{ form.basic_salary.value|default_if_none:'' }}" required>
+                                    </div>
+                                    
+                                    <!-- Meal Allowance -->
+                                    <div class="form-group">
+                                        <label>Meal Allowance</label>
+                                        <input type="number" name="meal_allowance" class="form-control" 
+                                               id="id_meal_allowance" step="0.01" min="0"
+                                               value="{{ form.meal_allowance.value|default_if_none:'' }}" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <!-- Medical Allowance -->
+                                    <div class="form-group">
+                                        <label>Medical Allowance</label>
+                                        <input type="number" name="medical_allowance" class="form-control" 
+                                               id="id_medical_allowance" step="0.01" min="0"
+                                               value="{{ form.medical_allowance.value|default_if_none:'' }}" required>
+                                    </div>
+                                    
+                                    <!-- Transportation Allowance -->
+                                    <div class="form-group">
+                                        <label>Transportation Allowance</label>
+                                        <input type="number" name="transportation_allowance" class="form-control" 
+                                               id="id_transportation_allowance" step="0.01" min="0"
+                                               value="{{ form.transportation_allowance.value|default_if_none:'' }}" required>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Leave Payment -->
+                            <div class="form-group">
+                                <label>Leave Payment</label>
+                                <input type="number" name="leave_payment" class="form-control" 
+                                       id="id_leave_payment" step="0.01" min="0"
+                                       value="{{ form.leave_payment.value|default_if_none:'' }}">
+                                <small class="text-muted">Optional payment for approved leaves</small>
+                            </div>
+                            
+                            <!-- Attendance Stats Section -->
+                            <div class="form-group" id="attendance_stats">
+                                {% if edit_mode and form.employee.value %}
+                                <button type="button" id="fetch_stats_btn" class="btn btn-info btn-sm mb-2">
+                                    <i class="fas fa-sync-alt"></i> Fetch Attendance Stats
+                                </button>
+                                <div id="stats_container" class="mt-2"></div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Salary Summary -->
+                            <div class="form-group" id="salary_summary">
+                                {% if form.instance.pk %}
+                                <hr>
+                                <div class="alert alert-info">
+                                    <h5>Salary Summary</h5>
+                                    <p>Total Earnings: ${{ form.instance.total_earnings|floatformat:2 }}</p>
+                                    <p>Total Deductions: ${{ form.instance.total_deductions|floatformat:2 }}</p>
+                                    <p><strong>Net Salary: ${{ form.instance.net_salary|floatformat:2 }}</strong></p>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <button type="submit" class="btn btn-primary btn-block">
+                                <i class="fas fa-save"></i> {% if edit_mode %}Update{% else %}Save{% endif %} Salary
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock content %}
+
+{% block custom_js %}
+<script>
+    $(document).ready(function () {
+        // Set default month/year to current month if empty
+        if (!$("#id_month_year").val()) {
+            var now = new Date();
+            var month = (now.getMonth() + 1).toString().padStart(2, '0');
+            var year = now.getFullYear();
+            $("#id_month_year").val(year + '-' + month);
+        }
+        
+        // Fetch employees when department changes
+        $("#id_department").change(function () {
+            var departmentId = $(this).val();
+            if (!departmentId) return;
+            
+            $.ajax({
+                url: "{% url 'get_employees' %}",
+                type: 'POST',
+                data: {
+                    department: departmentId,
+                    csrfmiddlewaretoken: "{{ csrf_token }}"
+                },
+                success: function (response) {
+                    var $employeeSelect = $("#id_employee");
+                    $employeeSelect.empty().append('<option value="">Select Employee</option>');
+                    
+                    if (response.length > 0) {
+                        $.each(response, function(index, employee) {
+                            $employeeSelect.append(
+                                $('<option></option>').val(employee.id).text(employee.name)
+                            );
+                        });
+                    }
+                },
+                error: function () {
+                    showToast("Error fetching employees. Please try again.", "Error", "error");
+                }
+            });
+        });
+        
+        // Fetch salary details when employee changes
+        $("#id_employee").change(function () {
+            var employeeId = $(this).val();
+            var monthYear = $("#id_month_year").val();
+            if (!employeeId || !monthYear) return;
+            
+            $.ajax({
+                url: "{% url 'fetch_employee_salary' %}",
+                type: 'POST',
+                data: {
+                    employee: employeeId,
+                    month_year: monthYear,
+                    csrfmiddlewaretoken: "{{ csrf_token }}"
+                },
+                success: function (response) {
+                    if (response.success) {
+                        $("#id_basic_salary").val(response.salary.basic_salary);
+                        $("#id_meal_allowance").val(response.salary.meal_allowance);
+                        $("#id_medical_allowance").val(response.salary.medical_allowance);
+                        $("#id_transportation_allowance").val(response.salary.transportation_allowance);
+                        
+                        // Set leave payment if available
+                        if (response.salary.leave_payment) {
+                            $("#id_leave_payment").val(response.salary.leave_payment);
+                        } else {
+                            $("#id_leave_payment").val("");
+                        }
+                        
+                        // Update summary
+                        var summaryHtml = `
+                            <hr>
+                            <div class="alert alert-info">
+                                <h5>Salary Summary</h5>
+                                <p>Total Earnings: $${response.salary.total_earnings}</p>
+                                <p>Total Deductions: $${response.salary.total_deductions}</p>
+                                <p><strong>Net Salary: $${response.salary.net_salary}</strong></p>
+                            </div>
+                        `;
+                        $("#salary_summary").html(summaryHtml);
+                        showToast("Salary details loaded successfully", "Success", "success");
+                    } else {
+                        // Clear fields if no salary record found
+                        $("#id_basic_salary").val("");
+                        $("#id_meal_allowance").val("");
+                        $("#id_medical_allowance").val("");
+                        $("#id_transportation_allowance").val("");
+                        $("#id_leave_payment").val("");
+                        $("#salary_summary").html('<div class="alert alert-warning">No salary record found for selected employee and period.</div>');
+                        showToast("No salary record found for selected employee and period", "Information", "info");
+                    }
+                },
+                error: function () {
+                    showToast("Error fetching salary details. Please try again.", "Error", "error");
+                }
+            });
+        });
+        
+        // Calculate and update summary when salary fields change
+        $("input[name='basic_salary'], input[name='meal_allowance'], input[name='medical_allowance'], input[name='transportation_allowance'], input[name='leave_payment']").on('input', function() {
+            calculateSalarySummary();
+        });
+        
+        function calculateSalarySummary() {
+            var basic = parseFloat($("#id_basic_salary").val()) || 0;
+            var meal = parseFloat($("#id_meal_allowance").val()) || 0;
+            var medical = parseFloat($("#id_medical_allowance").val()) || 0;
+            var transportation = parseFloat($("#id_transportation_allowance").val()) || 0;
+            var leavePayment = parseFloat($("#id_leave_payment").val()) || 0;
+            
+            var tax = basic * 0.13;
+            var insurance = basic * 0.05;
+            var totalEarnings = basic + meal + medical + transportation + leavePayment;
+            var deductions = tax + insurance;
+            var netSalary = totalEarnings - deductions;
+            
+            var summaryHtml = `
+                <hr>
+                <div class="alert alert-info">
+                    <h5>Salary Summary</h5>
+                    <p>Total Earnings: $${totalEarnings.toFixed(2)}</p>
+                    <p>Total Deductions: $${deductions.toFixed(2)}</p>
+                    <p><strong>Net Salary: $${netSalary.toFixed(2)}</strong></p>
+                </div>
+            `;
+            $("#salary_summary").html(summaryHtml);
+        }
+        
+        // Fetch attendance stats when button is clicked
+        $("#fetch_stats_btn").click(function() {
+            var employeeId = $("#id_employee").val();
+            var monthYear = $("#id_month_year").val();
+            
+            if (!employeeId || !monthYear) {
+                showToast("Please select employee and month/year first", "Warning", "warning");
+                return;
+            }
+            
+            $("#stats_container").html('<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Loading attendance stats...</div>');
+            
+            $.ajax({
+                url: "{% url 'get_employee_stats' %}",
+                type: 'POST',
+                data: {
+                    employee: employeeId,
+                    month_year: monthYear,
+                    csrfmiddlewaretoken: "{{ csrf_token }}"
+                },
+                success: function(response) {
+                    if (response.success) {
+                        var stats = response.stats;
+                        var statsHtml = `
+                            <div class="alert alert-light border">
+                                <h6 class="mb-3">Attendance Statistics for Selected Month</h6>
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="text-center">
+                                            <p class="mb-0 text-success font-weight-bold">${stats.present_count}/${stats.total_days}</p>
+                                            <small>Days Present</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="text-center">
+                                            <p class="mb-0 text-danger font-weight-bold">${stats.absent_count}/${stats.total_days}</p>
+                                            <small>Days Absent</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="text-center">
+                                            <p class="mb-0 text-warning font-weight-bold">${stats.leave_count}</p>
+                                            <small>Approved Leaves</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="progress mt-3">
+                                    <div class="progress-bar bg-success" role="progressbar" style="width: ${stats.attendance_percentage}%" 
+                                         aria-valuenow="${stats.attendance_percentage}" aria-valuemin="0" aria-valuemax="100">
+                                        ${stats.attendance_percentage}%
+                                    </div>
+                                </div>
+                                <div class="mt-3 text-center">
+                                    <button type="button" id="apply_leave_payment" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-coins"></i> Calculate Suggested Leave Payment
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                        $("#stats_container").html(statsHtml);
+                        
+                        // Add event listener for the calculate leave payment button
+                        $("#apply_leave_payment").click(function() {
+                            var basicSalary = parseFloat($("#id_basic_salary").val()) || 0;
+                            if (basicSalary <= 0) {
+                                showToast("Basic salary must be set first", "Warning", "warning");
+                                return;
+                            }
+                            
+                            // Calculate a suggested leave payment based on approved leaves and daily rate
+                            var workingDays = stats.total_days || 22; // Default to 22 working days if not available
+                            var dailyRate = basicSalary / workingDays;
+                            var suggestedPayment = Math.round(dailyRate * stats.leave_count * 100) / 100;
+                            
+                            if (suggestedPayment > 0) {
+                                $("#id_leave_payment").val(suggestedPayment);
+                                calculateSalarySummary();
+                                showToast("Leave payment calculated and applied", "Success", "success");
+                            } else {
+                                showToast("No approved leaves found for this period", "Info", "info");
+                            }
+                        });
+                    } else {
+                        $("#stats_container").html(`<div class="alert alert-warning"><i class="fas fa-exclamation-triangle"></i> ${response.message || 'Could not retrieve attendance stats'}</div>`);
+                    }
+                },
+                error: function() {
+                    $("#stats_container").html('<div class="alert alert-danger"><i class="fas fa-exclamation-circle"></i> Error fetching attendance stats</div>');
+                }
+            });
+        });
+    });
+</script>
+{% endblock custom_js %}

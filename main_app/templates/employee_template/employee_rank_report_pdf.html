@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Employee Performance Report</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        h1, h2 {
+            color: #333;
+            text-align: center;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .report-info {
+            margin-bottom: 20px;
+            text-align: right;
+            font-size: 14px;
+            color: #666;
+        }
+        .employee-info {
+            margin-bottom: 30px;
+            border: 1px solid #ddd;
+            padding: 15px;
+            background-color: #f9f9f9;
+        }
+        .employee-info p {
+            margin: 5px 0;
+        }
+        .section {
+            margin-bottom: 30px;
+        }
+        .section h3 {
+            background-color: #f2f2f2;
+            padding: 10px;
+            margin-top: 20px;
+            border-left: 5px solid #4CAF50;
+        }
+        .metrics {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .metric-box {
+            flex: 1;
+            text-align: center;
+            padding: 15px;
+            margin: 0 10px;
+            background-color: #f2f2f2;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .metric-box h4 {
+            margin-top: 0;
+            color: #555;
+        }
+        .metric-box .value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #4CAF50;
+            margin: 10px 0;
+        }
+        .metric-box .description {
+            font-size: 14px;
+            color: #777;
+        }
+        .progress-bar {
+            background-color: #e0e0e0;
+            height: 20px;
+            border-radius: 10px;
+            margin: 10px 0;
+        }
+        .progress {
+            background-color: #4CAF50;
+            height: 20px;
+            border-radius: 10px;
+        }
+        .footer {
+            margin-top: 40px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+            border-top: 1px solid #ddd;
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Employee Performance Report</h1>
+        <h2>{{ month }} {{ year }}</h2>
+    </div>
+    
+    <div class="report-info">
+        <p>Generated on: {{ generated_on }}</p>
+    </div>
+    
+    <div class="employee-info">
+        <h3>Employee Information</h3>
+        <p><strong>Name:</strong> {{ employee.admin.first_name }} {{ employee.admin.last_name }}</p>
+        <p><strong>Department:</strong> {{ employee.department.name }}</p>
+        <p><strong>Division:</strong> {{ employee.division.name }}</p>
+        <p><strong>ID:</strong> {{ employee.id }}</p>
+    </div>
+    
+    <div class="section">
+        <h3>Attendance Performance</h3>
+        <div class="metrics">
+            <div class="metric-box">
+                <h4>Present Days</h4>
+                <div class="value">{{ present_days }}</div>
+                <div class="description">out of {{ present_days|add:absent_days }} working days</div>
+            </div>
+            <div class="metric-box">
+                <h4>Absent Days</h4>
+                <div class="value">{{ absent_days }}</div>
+                <div class="description">out of {{ present_days|add:absent_days }} working days</div>
+            </div>
+            <div class="metric-box">
+                <h4>Attendance Percentage</h4>
+                <div class="value">{{ attendance_percentage|floatformat:1 }}%</div>
+                <div class="progress-bar">
+                    <div class="progress" style="width: {{ attendance_percentage }}%;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="section">
+        <h3>Task Performance</h3>
+        <div class="metrics">
+            <div class="metric-box">
+                <h4>Total Tasks</h4>
+                <div class="value">{{ total_tasks }}</div>
+                <div class="description">assigned this month</div>
+            </div>
+            <div class="metric-box">
+                <h4>Completed Tasks</h4>
+                <div class="value">{{ completed_tasks }}</div>
+                <div class="description">out of {{ total_tasks }} tasks</div>
+            </div>
+            <div class="metric-box">
+                <h4>Average Rating</h4>
+                <div class="value">{{ average_rating|floatformat:1 }}/5</div>
+                <div class="progress-bar">
+                    {% with rating_width=average_rating|floatformat:1 %}
+                    {% widthratio rating_width 5 100 as percent_width %}
+                    <div class="progress" style="width: {{ percent_width }}%;"></div>
+                    {% endwith %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <p>This report is system-generated and reflects your performance metrics for {{ month }} {{ year }}.</p>
+        <p>Please discuss any concerns with your manager.</p>
+    </div>
+</body>
+</html> 
