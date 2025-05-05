@@ -6,3 +6,4 @@ Update 4: Implemented attendance tracking
 Update 5: Payroll system integration
 Update 6: Performance review module
 Update 7: Recruitment workflow added
+Update 8: Notification system implemented
