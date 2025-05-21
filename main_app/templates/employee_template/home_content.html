@@ -1,6 +1,6 @@
 {% extends 'main_app/base.html' %}
 {% load static %}
-{% block page_title %}{{page_title}}{% endblock page_title %}
+
 {% block content %}
 <section class="content">
     <div class="container-fluid">
@@ -69,219 +69,232 @@
         </div>
         <div class="row">
             <div class="col-lg-6">
-           
-                        <!-- DONUT CHART -->
-                        <div class="card card-secondary">
-                          <div class="card-header">
-                            <h3 class="card-title">{{page_title}}</h3>
-            
-                            <div class="card-tools">
-                              <button type="button" class="btn btn-tool" data-card-widget="collapse"><i class="fas fa-minus"></i>
-                              </button>
-                              <button type="button" class="btn btn-tool" data-card-widget="remove"><i class="fas fa-times"></i></button>
-                            </div>
-                          </div>
-                          <div class="card-body">
-                            <canvas id="attendanceData" style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
-                          </div>
-                          <!-- /.card-body -->
+                <!-- DONUT CHART -->
+                <div class="card card-secondary">
+                    <div class="card-header">
+                        <h3 class="card-title">Attendance Overview</h3>
+                        <div class="card-tools">
+                            <button type="button" class="btn btn-tool" data-card-widget="collapse"><i class="fas fa-minus"></i></button>
+                            <button type="button" class="btn btn-tool" data-card-widget="remove"><i class="fas fa-times"></i></button>
                         </div>
-                        <!-- /.card -->
+                    </div>
+                    <div class="card-body">
+                        <canvas id="attendanceData" style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
+                    </div>
+                    <!-- /.card-body -->
+                </div>
+                <!-- /.card -->
             </div>
-                  
             <div class="col-lg-6">
-            
-                        <div class="card card-secondary">
-                          <div class="card-header">
-                            <h3 class="card-title">{{page_title}}</h3>
-            
-                            <div class="card-tools">
-                              <button type="button" class="btn btn-tool" data-card-widget="collapse"><i class="fas fa-minus"></i>
-                              </button>
-                              <button type="button" class="btn btn-tool" data-card-widget="remove"><i class="fas fa-times"></i></button>
-                            </div>
-                          </div>
-                          <div class="card-body">
-                            <div class="chart">
-                              <canvas id="attendanceStatistics" style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
-                          <!-- /.card-body -->
-                        <!-- /.card -->
-                        </div> 
+                <div class="card card-secondary">
+                    <div class="card-header">
+                        <h3 class="card-title">{{ panel_title }}</h3>
+                        <div class="card-tools">
+                            <button type="button" class="btn btn-tool" data-card-widget="collapse"><i class="fas fa-minus"></i></button>
+                            <button type="button" class="btn btn-tool" data-card-widget="remove"><i class="fas fa-times"></i></button>
                         </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart">
+                            <canvas id="attendanceStatistics" style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
                         </div>
-                        </div>
-                        </div>
-                        </div>  
-                        </section>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
 {% endblock content %}
 
+
 {% block custom_js %}
-  <script>
+<script>
 $(document).ready(function(){
-
-    //Dataset
-    var departments = {{data_name|safe}}
-    var data_present = {{data_present}}
-    var data_absent = {{data_absent}}
-
-    //-------------
-    //- DONUT CHART -
-    var attendanceDataCanvas = $('#attendanceData').get(0).getContext('2d')
-    var donutData        = {
+    // DONUT CHART
+    var attendanceDataCanvas = $('#attendanceData').get(0).getContext('2d');
+    var donutData = {
       labels: [
          'Present', 'Absent'
       ],
       datasets: [
         {
-          data: [{{percent_present}}, {{percent_absent}}],
-          backgroundColor : ['#00a65a','#f56954'],
+          data: [{{ percent_present }}, {{ percent_absent }}],
+          backgroundColor: ['#00a65a','#f56954']
         }
       ]
-    }
-    var donutOptions     = {
-      maintainAspectRatio : false,
-      responsive : true,
-    }
+    };
+    var donutOptions = {
+      maintainAspectRatio: false,
+      responsive: true
+    };
     var attendanceData = new Chart(attendanceDataCanvas, {
       type: 'doughnut',
       data: donutData,
       options: donutOptions      
     });
 
-    //attendanceStatistics
-//Bar Chart
-var areaChartData = {
-    labels  : departments,
-    datasets: [
-    {
-        label               : 'Present In Class',
-        backgroundColor     : 'rgba(60,141,188,0.9)',
-        borderColor         : 'rgba(60,141,188,0.8)',
-        pointRadius          : false,
-        pointColor          : '#3b8bba',
-        pointStrokeColor    : 'rgba(60,141,188,1)',
-        pointHighlightFill  : '#fff',
-        pointHighlightStroke: 'rgba(60,141,188,1)',
-        data                : data_present
-      },
+    // Use dynamic data from the backend
+    var departments = [];
+    var data_present = [];
+    var data_absent = [];
 
-      {
-        label               : 'Absent In Class',
-        backgroundColor     : 'rgba(210, 214, 222, 1)',
-        borderColor         : 'rgba(210, 214, 222, 1)',
-        pointRadius         : false,
-        pointColor          : 'rgba(210, 214, 222, 1)',
-        pointStrokeColor    : '#c1c7d1',
-        pointHighlightFill  : '#fff',
-        pointHighlightStroke: 'rgba(220,220,220,1)',
-        data                : data_absent
-      },
-    ]
-  }
-var barChartCanvas = $('#attendanceStatistics').get(0).getContext('2d')
-var barChartData = jQuery.extend(true, {}, areaChartData)
-var temp = areaChartData.datasets[0]
-barChartData.datasets[0] = temp
-var barChartOptions = {
-  responsive              : true,
-  maintainAspectRatio     : false,
-  datasetFill             : false
-}
+    try {
+        departments = JSON.parse('{{ data_name|safe|escapejs }}');
+        data_present = JSON.parse('{{ data_present|safe|escapejs }}');
+        data_absent = JSON.parse('{{ data_absent|safe|escapejs }}');
+    } catch (e) {
+        console.error("Error parsing department data:", e);
+        // Fallback data if parsing fails
+        departments = ['IT Department', 'Software Development Department', 'Cybersecurity Department'];
+        data_present = [2.0, 2.0, 2.0];
+        data_absent = [0, 0, 0];
+    }
 
-var barChart = new Chart(barChartCanvas, {
-  type: 'bar', 
-  data: barChartData,
-  options: barChartOptions
-})
-
- 
-})
-
-  </script>
-        <!-- The core Firebase JS SDK is always required and must be listed first -->
-        <script src="https://www.gstatic.com/firebasejs/7.23.0/firebase-app.js"></script>
-
-        <!-- TODO: Add SDKs for Firebase products that you want to use
-         https://firebase.google.com/docs/web/setup#available-libraries -->
-        <script src="https://www.gstatic.com/firebasejs/7.23.0/firebase-analytics.js"></script>
-        <script src="https://www.gstatic.com/firebasejs/7.22.1/firebase-messaging.js"></script>
-    
-    
-        <script>
-            // Your web app's Firebase configuration
-            // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-            var firebaseConfig = {
-                apiKey: "AIzaSyBarDWWHTfTMSrtc5Lj3Cdw5dEvjAkFwtM",
-                authDomain: "sms-with-django.firebaseapp.com",
-                databaseURL: "https://sms-with-django.firebaseio.com",
-                projectId: "sms-with-django",
-                storageBucket: "sms-with-django.appspot.com",
-                messagingSenderId: "945324593139",
-                appId: "1:945324593139:web:03fa99a8854bbd38420c86",
-                measurementId: "G-2F2RXTL9GT"
-            };
-            // Initialize Firebase
-            firebase.initializeApp(firebaseConfig)
-            const messaging = firebase.messaging();
-            function InitializeFireBaseMessaging() {
-                messaging
-                    .requestPermission()
-                    .then(function () {
-                        console.log("Notification Permission");
-                        return messaging.getToken();
-                    })
-                    .then(function (token) {
-                        console.log("Token : " + token);
-                        sendToServer(token);
-                    })
-                    .catch(function (reason) {
-                        console.log(reason)
-                    })
-            }
-            messaging.onMessage(function (payload) {
-                const notificationOption = {
-                    body: payload.notification.body,
-                    icon: payload.notification.icon,
-    
-                }
-                if (Notification.permission == 'granted') {
-                    var notification = new Notification(payload.notification.title, notificationOption);
-                    notification.onclick = function (event) {
-                        event.preventDefault();
-                        window.open(payload.notification.click_action, "_blank");
-                        notification.close();
+    var barChartCanvas = $('#attendanceStatistics').get(0).getContext('2d');
+    if (barChartCanvas) {
+        var barChart = new Chart(barChartCanvas, {
+            type: 'bar', 
+            data: {
+                labels: departments,
+                datasets: [
+                    {
+                        label: 'Present In Class',
+                        backgroundColor: '#36a2eb',
+                        borderColor: '#36a2eb',
+                        pointRadius: false,
+                        pointColor: '#3b8bba',
+                        pointStrokeColor: 'rgba(60,141,188,1)',
+                        pointHighlightFill: '#fff',
+                        pointHighlightStroke: 'rgba(60,141,188,1)',
+                        data: data_present
+                    },
+                    {
+                        label: 'Absent In Class',
+                        backgroundColor: '#e2e6ea',
+                        borderColor: '#e2e6ea',
+                        pointRadius: false,
+                        pointColor: '#3b8bba',
+                        pointStrokeColor: 'rgba(60,141,188,1)',
+                        pointHighlightFill: '#fff',
+                        pointHighlightStroke: 'rgba(60,141,188,1)',
+                        data: data_absent
                     }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    xAxes: [{
+                        gridLines: {
+                            display: true
+                        },
+                        ticks: {
+                            fontColor: '#73879C'
+                        }
+                    }],
+                    yAxes: [{
+                        ticks: {
+                            beginAtZero: true,
+                            fontColor: '#73879C',
+                            max: 2.5
+                        },
+                        gridLines: {
+                            color: 'rgba(153, 153, 153, 0.1)',
+                            display: true
+                        }
+                    }]
+                },
+                legend: {
+                    display: true
                 }
-                console.log(payload);
-            });
-            messaging.onTokenRefresh(function () {
-                messaging.getToken()
-                    .then(function (newToken) {
-                        console.log("New Token : " + newToken);
-                        sendToServer(newToken);
-  
-                    })
-                    .catch(function (reason) {
-                        console.log(reason)
-                    })
-            })
-    
-            function sendToServer(token){
-              $.ajax({
-                url: "{% url 'employee_fcmtoken' %}",
-                type: 'POST',
-                data: {
-                    token: token,
-                }
-            }).done(function (response) {
-               
-      
-               
-            }).fail(function (response) {
-            })
-  
             }
-            
-            InitializeFireBaseMessaging();
-        </script>
+        });
+    } else {
+        console.error("Could not get canvas context for bar chart");
+    }
+});
+</script>
+
+<!-- The core Firebase JS SDK is always required and must be listed first -->
+<script src="https://www.gstatic.com/firebasejs/7.23.0/firebase-app.js"></script>
+
+<!-- TODO: Add SDKs for Firebase products that you want to use
+ https://firebase.google.com/docs/web/setup#available-libraries -->
+<script src="https://www.gstatic.com/firebasejs/7.23.0/firebase-analytics.js"></script>
+<script src="https://www.gstatic.com/firebasejs/7.22.1/firebase-messaging.js"></script>
+
+
+<script>
+    // Your web app's Firebase configuration
+    // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+    var firebaseConfig = {
+        apiKey: "AIzaSyBarDWWHTfTMSrtc5Lj3Cdw5dEvjAkFwtM",
+        authDomain: "sms-with-django.firebaseapp.com",
+        databaseURL: "https://sms-with-django.firebaseio.com",
+        projectId: "sms-with-django",
+        storageBucket: "sms-with-django.appspot.com",
+        messagingSenderId: "945324593139",
+        appId: "1:945324593139:web:03fa99a8854bbd38420c86",
+        measurementId: "G-2F2RXTL9GT"
+    };
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const messaging = firebase.messaging();
+    function InitializeFireBaseMessaging() {
+        messaging
+            .requestPermission()
+            .then(function () {
+                console.log("Notification Permission");
+                return messaging.getToken();
+            })
+            .then(function (token) {
+                console.log("Token : " + token);
+                sendToServer(token);
+            })
+            .catch(function (reason) {
+                console.log(reason);
+            });
+    }
+    messaging.onMessage(function (payload) {
+        const notificationOption = {
+            body: payload.notification.body,
+            icon: payload.notification.icon
+        };
+        if (Notification.permission == 'granted') {
+            var notification = new Notification(payload.notification.title, notificationOption);
+            notification.onclick = function (event) {
+                event.preventDefault();
+                window.open(payload.notification.click_action, "_blank");
+                notification.close();
+            };
+        }
+        console.log(payload);
+    });
+    messaging.onTokenRefresh(function () {
+        messaging.getToken()
+            .then(function (newToken) {
+                console.log("New Token : " + newToken);
+                sendToServer(newToken);
+            })
+            .catch(function (reason) {
+                console.log(reason);
+            });
+    });
+
+    function sendToServer(token){
+      $.ajax({
+        url: "{% url 'employee_fcmtoken' %}",
+        type: 'POST',
+        data: {
+            token: token
+        }
+      }).done(function (response) {
+         
+      }).fail(function (response) {
+      });
+    }
+    
+    InitializeFireBaseMessaging();
+</script>
 {% endblock custom_js %}

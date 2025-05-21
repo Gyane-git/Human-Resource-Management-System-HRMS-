@@ -47,7 +47,6 @@
                     <div class="icon">
                         <i class="ion ion-person-add"></i>
                     </div>
-                   
                 </div>
             </div>
             <!-- ./col -->
@@ -74,7 +73,7 @@
                 <!-- LINE CHART -->
                 <div class="card card-secondary">
                   <div class="card-header">
-                    <h3 class="card-title">{{page_title}}</h3>
+                    <h3 class="card-title">Attendance Statistics</h3>
     
                     <div class="card-tools">
                       <button type="button" class="btn btn-tool" data-card-widget="collapse"><i class="fas fa-minus"></i>
@@ -86,28 +85,29 @@
                     <div class="chart">
                       <canvas id="pieChart" style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
                     </div>
-                  </div></div>
+                  </div>
+                </div>
+                <!-- /.card-body -->
+            </div>
+            <div class="col-md-6">
+                <div class="card card-secondary">
+                  <div class="card-header">
+                    <h3 class="card-title">{{ panel_title }}</h3>
+
+                    <div class="card-tools">
+                      <button type="button" class="btn btn-tool" data-card-widget="collapse"><i class="fas fa-minus"></i>
+                      </button>
+                      <button type="button" class="btn btn-tool" data-card-widget="remove"><i class="fas fa-times"></i></button>
+                    </div>
+                  </div>
+                  <div class="card-body">
+                    <div class="chart">
+                      <canvas id="barChart" style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
+                    </div>
+                  </div>
                   <!-- /.card-body -->
                 </div>
-                <div class="col-md-6">
-                    <div class="card card-secondary">
-              <div class="card-header">
-                <h3 class="card-title">{{page_title}}</h3>
-
-                <div class="card-tools">
-                  <button type="button" class="btn btn-tool" data-card-widget="collapse"><i class="fas fa-minus"></i>
-                  </button>
-                  <button type="button" class="btn btn-tool" data-card-widget="remove"><i class="fas fa-times"></i></button>
-                </div>
-              </div>
-              <div class="card-body">
-                <div class="chart">
-                  <canvas id="barChart" style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
-                </div>
-              </div>
-              <!-- /.card-body -->
             </div>
-                </div>
             <!-- right col -->
         </div>
         <!-- /.row (main row) -->
@@ -116,162 +116,186 @@
 {% endblock content %}
 
 {% block custom_js %}
-  <script>
-      $(document).ready(function(){
-        var donutData        = {
-            labels: ['Attendance', 'Leave'],
-            datasets: [
-              {
-                data:[{{total_attendance}}, {{total_leave}}],
-                backgroundColor : ['#00a65a', '#f39c12',],
-              }
-            ]
-          }
-        var pieChartCanvas = $('#pieChart').get(0).getContext('2d')
-        var pieData        = donutData;
-        var pieOptions     = {
-          maintainAspectRatio : false,
-          responsive : true,
+<script type="text/javascript">
+$(document).ready(function() {
+    // Create the pie chart
+    var pieCtx = document.getElementById('pieChart').getContext('2d');
+    var pieChart = new Chart(pieCtx, {
+        type: 'pie',
+        data: {
+            labels: ['Present', 'Leave'],
+            datasets: [{
+                data: [{{total_attendance}}, {{total_leave}}],
+                backgroundColor: ['#00a65a', '#f39c12']
+            }]
+        },
+        options: {
+            maintainAspectRatio: false,
+            responsive: true
         }
-        //Create pie or douhnut chart
-        // You can switch between pie and douhnut using the method below.
-        var pieChart = new Chart(pieChartCanvas, {
-          type: 'pie',
-          data: pieData,
-          options: pieOptions      
+    });
+
+    // Parse the data passed from the backend
+    var departmentList = JSON.parse('{{ department_list|safe|escapejs }}');
+    var attendanceList = JSON.parse('{{ attendance_list|safe|escapejs }}');
+    
+    // Generate colors based on division
+    var colors = [];
+    var division = "{{ panel_title }}".toLowerCase();
+    
+    for (var i = 0; i < departmentList.length; i++) {
+        if (division.includes("finance")) {
+            colors.push('#2196f3'); // Blue for Finance
+        } else if (division.includes("hr") || division.includes("human")) {
+            colors.push('#ff9800'); // Orange for HR
+        } else if (division.includes("it") || division.includes("tech")) {
+            colors.push('#9c27b0'); // Purple for IT
+        } else if (division.includes("marketing")) {
+            colors.push('#4caf50'); // Green for Marketing
+        } else {
+            colors.push('#f44336'); // Default Red
+        }
+    }
+    
+    var barCtx = document.getElementById('barChart').getContext('2d');
+    if (barCtx) {
+        var barChart = new Chart(barCtx, {
+            type: 'bar',
+            data: {
+                labels: departmentList,
+                datasets: [{
+                    label: "Attendance",
+                    backgroundColor: colors,
+                    hoverBackgroundColor: colors,
+                    borderWidth: 1,
+                    borderColor: colors,
+                    data: attendanceList
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    xAxes: [{
+                        gridLines: {
+                            display: true
+                        },
+                        ticks: {
+                            fontColor: '#73879C'
+                        }
+                    }],
+                    yAxes: [{
+                        ticks: {
+                            beginAtZero: true,
+                            fontColor: '#73879C',
+                            max: 3.5
+                        },
+                        gridLines: {
+                            color: 'rgba(153, 153, 153, 0.1)',
+                            display: true
+                        }
+                    }]
+                },
+                legend: {
+                    display: true,
+                    position: 'bottom',
+                    labels: {
+                        fontColor: '#73879C',
+                        boxWidth: 20
+                    }
+                }
+            }
         });
+    } else {
+        console.error("Could not get canvas context for bar chart");
+    }
+});
+</script>
 
-        var department_list = {{ department_list|safe|escape }};
-        var attendance_list = {{ attendance_list }};
-  
-            var barChartData = {
-      labels  : department_list,
-      datasets: [
-      {
-        label               : 'Attendance',
-        backgroundColor     : '#6c757d',
-        borderColor         : 'rgba(60,141,188,0.8)',
-        pointRadius          : false,
-        pointColor          : '#3b8bba',
-        pointStrokeColor    : 'rgba(60,141,188,1)',
-        pointHighlightFill  : '#fff',
-        pointHighlightStroke: 'rgba(60,141,188,1)',
-        data                : attendance_list
-      }, 
-      
-      ]
-    }
-        var barChartCanvas = $('#barChart').get(0).getContext('2d')
-        var temp0 = barChartData.datasets[0]
-        //var temp1 = areaChartData.datasets[1]
-        barChartData.datasets[0] = temp0
-       // barChartData.datasets[1] = temp0
-    
-    var stackedBarChartOptions = {
-      responsive              : true,
-      maintainAspectRatio     : false,
-      scales: {
-        xAxes: [{
-          stacked: true,
-        }],
-        yAxes: [{
-          stacked: true
-        }]
-      }
-    }
-    
-        var barChart = new Chart(barChartCanvas, {
-          type: 'bar', 
-          data: barChartData,
-          options: stackedBarChartOptions
+<!-- The core Firebase JS SDK is always required and must be listed first -->
+<script src="https://www.gstatic.com/firebasejs/7.23.0/firebase-app.js"></script>
+
+<!-- TODO: Add SDKs for Firebase products that you want to use
+ https://firebase.google.com/docs/web/setup#available-libraries -->
+<script src="https://www.gstatic.com/firebasejs/7.23.0/firebase-analytics.js"></script>
+<script src="https://www.gstatic.com/firebasejs/7.22.1/firebase-messaging.js"></script>
+
+<script>
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+var firebaseConfig = {
+    apiKey: "AIzaSyBarDWWHTfTMSrtc5Lj3Cdw5dEvjAkFwtM",
+    authDomain: "sms-with-django.firebaseapp.com",
+    databaseURL: "https://sms-with-django.firebaseio.com",
+    projectId: "sms-with-django",
+    storageBucket: "sms-with-django.appspot.com",
+    messagingSenderId: "945324593139",
+    appId: "1:945324593139:web:03fa99a8854bbd38420c86",
+    measurementId: "G-2F2RXTL9GT"
+};
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const messaging = firebase.messaging();
+
+function InitializeFireBaseMessaging() {
+    messaging
+        .requestPermission()
+        .then(function () {
+            console.log("Notification Permission");
+            return messaging.getToken();
         })
-      })
+        .then(function (token) {
+            console.log("Token : " + token);
+            sendToServer(token);
+        })
+        .catch(function (reason) {
+            console.log(reason);
+        });
+}
 
+messaging.onMessage(function (payload) {
+    const notificationOption = {
+        body: payload.notification.body,
+        icon: payload.notification.icon
+    };
     
-  </script>
-      <!-- The core Firebase JS SDK is always required and must be listed first -->
-      <script src="https://www.gstatic.com/firebasejs/7.23.0/firebase-app.js"></script>
+    if (Notification.permission == 'granted') {
+        var notification = new Notification(payload.notification.title, notificationOption);
+        notification.onclick = function (event) {
+            event.preventDefault();
+            window.open(payload.notification.click_action, "_blank");
+            notification.close();
+        };
+    }
+    console.log(payload);
+});
 
-      <!-- TODO: Add SDKs for Firebase products that you want to use
-       https://firebase.google.com/docs/web/setup#available-libraries -->
-      <script src="https://www.gstatic.com/firebasejs/7.23.0/firebase-analytics.js"></script>
-      <script src="https://www.gstatic.com/firebasejs/7.22.1/firebase-messaging.js"></script>
-  
-  
-      <script>
-          // Your web app's Firebase configuration
-          // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-          var firebaseConfig = {
-              apiKey: "AIzaSyBarDWWHTfTMSrtc5Lj3Cdw5dEvjAkFwtM",
-              authDomain: "sms-with-django.firebaseapp.com",
-              databaseURL: "https://sms-with-django.firebaseio.com",
-              projectId: "sms-with-django",
-              storageBucket: "sms-with-django.appspot.com",
-              messagingSenderId: "945324593139",
-              appId: "1:945324593139:web:03fa99a8854bbd38420c86",
-              measurementId: "G-2F2RXTL9GT"
-          };
-          // Initialize Firebase
-          firebase.initializeApp(firebaseConfig)
-          const messaging = firebase.messaging();
-          function InitializeFireBaseMessaging() {
-              messaging
-                  .requestPermission()
-                  .then(function () {
-                      console.log("Notification Permission");
-                      return messaging.getToken();
-                  })
-                  .then(function (token) {
-                      console.log("Token : " + token);
-                      sendToServer(token);
-                  })
-                  .catch(function (reason) {
-                      console.log(reason)
-                  })
-          }
-          messaging.onMessage(function (payload) {
-              const notificationOption = {
-                  body: payload.notification.body,
-                  icon: payload.notification.icon,
-  
-              }
-              if (Notification.permission == 'granted') {
-                  var notification = new Notification(payload.notification.title, notificationOption);
-                  notification.onclick = function (event) {
-                      event.preventDefault();
-                      window.open(payload.notification.click_action, "_blank");
-                      notification.close();
-                  }
-              }
-              console.log(payload);
-          });
-          messaging.onTokenRefresh(function () {
-              messaging.getToken()
-                  .then(function (newToken) {
-                      console.log("New Token : " + newToken);
-                      sendToServer(newToken);
+messaging.onTokenRefresh(function () {
+    messaging.getToken()
+        .then(function (newToken) {
+            console.log("New Token : " + newToken);
+            sendToServer(newToken);
+        })
+        .catch(function (reason) {
+            console.log(reason);
+        });
+});
 
-                  })
-                  .catch(function (reason) {
-                      console.log(reason)
-                  })
-          })
-  
-          function sendToServer(token){
-            $.ajax({
-              url: "{% url 'manager_fcmtoken' %}",
-              type: 'POST',
-              data: {
-                  token: token,
-              }
-          }).done(function (response) {
-   
-             
-          }).fail(function (response) {
-          })
+function sendToServer(token) {
+    $.ajax({
+        url: "{% url 'manager_fcmtoken' %}",
+        type: 'POST',
+        data: {
+            token: token
+        }
+    }).done(function (response) {
+        // Handle success
+    }).fail(function (response) {
+        // Handle failure
+    });
+}
 
-          }
-          
-          InitializeFireBaseMessaging();
-      </script>
+InitializeFireBaseMessaging();
+</script>
 {% endblock custom_js %}

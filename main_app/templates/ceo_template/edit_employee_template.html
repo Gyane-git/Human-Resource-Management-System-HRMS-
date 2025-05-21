@@ -22,3 +22,58 @@
     </div>
 </section>
 {% endblock content %}
+
+{% block custom_js %}
+<script>
+    $(document).ready(function(){
+        // Handle division change to update department options
+        $("#id_division").change(function() {
+            var divisionId = $(this).val();
+            var departmentSelect = $("#id_department");
+            
+            // Clear current options
+            departmentSelect.empty().append('<option value="">---------</option>');
+            
+            // If no division is selected, do nothing more
+            if (!divisionId) {
+                return;
+            }
+            
+            // Show loading indicator
+            departmentSelect.append('<option value="">Loading departments...</option>');
+            
+            // Fetch departments for selected division
+            $.ajax({
+                url: window.location.href,  // Use current URL
+                type: 'GET',
+                data: {
+                    'division_id': divisionId,
+                    'action': 'get_departments'
+                },
+                dataType: 'json',
+                success: function(data) {
+                    // Clear loading indicator
+                    departmentSelect.empty().append('<option value="">---------</option>');
+                    
+                    // Add new options
+                    $.each(data.departments, function(index, dept) {
+                        departmentSelect.append(
+                            $('<option></option>').val(dept.id).text(dept.name)
+                        );
+                    });
+                },
+                error: function() {
+                    // Handle error
+                    departmentSelect.empty().append('<option value="">---------</option>');
+                    departmentSelect.append('<option value="">Error loading departments</option>');
+                }
+            });
+        });
+        
+        // Trigger the change event if a division is already selected (e.g., in edit mode)
+        if ($("#id_division").val()) {
+            $("#id_division").trigger('change');
+        }
+    });
+</script>
+{% endblock custom_js %}

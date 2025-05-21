@@ -19,8 +19,10 @@
                                 <th>SN</th>
                                 <th>Manager</th>
                                 <th>Division</th>
+                                <th>Leave Type</th>
+                                <th>From Date</th>
+                                <th>To Date</th>
                                 <th>Message</th>
-                                <th>Leave Date</th>
                                 <th>Submitted On</th>
                                 <th>Action</th>
                             </tr>
@@ -29,8 +31,16 @@
                                     <td>{{ forloop.counter }}</td>
                                     <td>{{ leave.manager.admin.first_name }} {{ leave.manager.admin.last_name }}</td>
                                     <td>{{ leave.manager.division.name }}</td>
+                                    <td>
+                                        {% if leave.leave_type == 'sick' %}
+                                            <span class="badge badge-danger">Sick Leave</span>
+                                        {% else %}
+                                            <span class="badge badge-info">Annual Leave</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ leave.date_from }}</td>
+                                    <td>{{ leave.date_to }}</td>
                                     <td>{{ leave.message }}</td>
-                                    <td>{{ leave.date }}</td>
                                     <td>{{ leave.created_at }}</td>
                                     <td>
                                         {% if leave.status == 0 %}
@@ -83,43 +93,49 @@
 
 {% block custom_js %}
 <script>
-    $(document).ready(function(){
-        // Open modal and set values
-        $(".reply_open_modal").click(function(){
+    $(document).ready(function () {
+        $(".reply_open_modal").click(function () {
             var id = $(this).val();
             var name = $(this).parents("tr").children("td:eq(1)").text();
             $("#reply_name").text(name);
             $("#id").val(id);
         });
 
-        // Handle reply submission
         $("#reply_btn").on("click", function () {
             var id = $("#id").val();
             var status = $("#reply_leave_status").val();
 
-            if (status == '1' || status == '-1') {
+            if (status === '1' || status === '-1') {
+                // Disable button and show loading state
+                var $btn = $(this);
+                $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Processing...');
+
                 $.ajax({
                     url: "{% url 'view_manager_leave' %}",
-                    type: 'POST',
+                    type: "POST",
                     data: {
                         id: id,
                         status: status,
-                        csrfmiddlewaretoken: "{{ csrf_token }}"  // CSRF token
+                        csrfmiddlewaretoken: "{{ csrf_token }}"
                     },
                     success: function (response) {
-                        if (response == "True") {
-                            alert("Leave Response Has Been Saved!");
+                        if (response.status === "True") {
+                            alert("Leave Response Has Been Saved and Email Sent!");
                             location.reload();
                         } else {
-                            alert("Reply Could Not Be Sent");
+                            alert("Error: " + (response.message || "Could not process the request"));
                         }
                     },
-                    error: function (xhr, status, error) {
-                        alert("Error Occurred: " + error);  // Display detailed error
+                    error: function () {
+                        alert("Error Occurred while processing the request.");
+                    },
+                    complete: function() {
+                        // Reset button state
+                        $btn.prop('disabled', false).html('Submit');
                     }
                 });
             } else {
-                alert("Choose a valid response");
+                alert("Please choose a valid response");
             }
         });
     });

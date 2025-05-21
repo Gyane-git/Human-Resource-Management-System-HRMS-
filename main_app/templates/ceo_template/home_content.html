@@ -75,7 +75,7 @@
                 <!-- LINE CHART -->
                 <div class="card card-secondary">
                   <div class="card-header">
-                    <h3 class="card-title">{{page_title}}</h3>
+                    <h3 class="card-title">Department Statistics</h3>
     
                     <div class="card-tools">
                       <button type="button" class="btn btn-tool" data-card-widget="collapse"><i class="fas fa-minus"></i>
@@ -85,30 +85,37 @@
                   </div>
                   <div class="card-body">
                     <div class="chart">
-                      <canvas id="pieChart" style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
+                      <canvas id="pieChart" 
+                              data-employees="{{total_employees}}" 
+                              data-managers="{{total_manager}}"
+                              style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
                     </div>
-                  </div></div>
+                  </div>
+                </div>
+                <!-- /.card-body -->
+            </div>
+            <div class="col-md-6">
+                <div class="card card-secondary">
+                  <div class="card-header">
+                    <h3 class="card-title">Department Attendance</h3>
+
+                    <div class="card-tools">
+                      <button type="button" class="btn btn-tool" data-card-widget="collapse"><i class="fas fa-minus"></i>
+                      </button>
+                      <button type="button" class="btn btn-tool" data-card-widget="remove"><i class="fas fa-times"></i></button>
+                    </div>
+                  </div>
+                  <div class="card-body">
+                    <div class="chart">
+                      <canvas id="barChart" 
+                              data-departments="{{ department_list|safe|escapejs }}"
+                              data-attendance="{{ attendance_list|safe|escapejs }}"
+                              style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
+                    </div>
+                  </div>
                   <!-- /.card-body -->
                 </div>
-                <div class="col-md-6">
-                    <div class="card card-secondary">
-              <div class="card-header">
-                <h3 class="card-title">{{page_title}}</h3>
-
-                <div class="card-tools">
-                  <button type="button" class="btn btn-tool" data-card-widget="collapse"><i class="fas fa-minus"></i>
-                  </button>
-                  <button type="button" class="btn btn-tool" data-card-widget="remove"><i class="fas fa-times"></i></button>
-                </div>
-              </div>
-              <div class="card-body">
-                <div class="chart">
-                  <canvas id="barChart" style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
-                </div>
-              </div>
-              <!-- /.card-body -->
             </div>
-                </div>
             <!-- right col -->
         </div>
         <!-- /.row (main row) -->
@@ -117,75 +124,114 @@
 {% endblock content %}
 
 {% block custom_js %}
-  <script>
-      $(document).ready(function(){
-        var donutData        = {
+<script>
+$(document).ready(function() {
+    console.log("DOM loaded for admin panel");
+    
+    // Create the pie chart
+    var pieChartCanvas = document.getElementById('pieChart');
+    if (pieChartCanvas) {
+        var pieCtx = pieChartCanvas.getContext('2d');
+        var totalEmployees = parseInt(pieChartCanvas.getAttribute('data-employees') || 0);
+        var totalManagers = parseInt(pieChartCanvas.getAttribute('data-managers') || 0);
+        
+        var pieData = {
             labels: ['Employees', 'Manager'],
-            datasets: [
-              {
-                data:[{{total_employees}}, {{total_manager}}],
-                backgroundColor : ['#00a65a', '#f39c12',],
-              }
-            ]
-          }
-        var pieChartCanvas = $('#pieChart').get(0).getContext('2d')
-        var pieData        = donutData;
-        var pieOptions     = {
-          maintainAspectRatio : false,
-          responsive : true,
-        }
-        //Create pie or douhnut chart
-        // You can switch between pie and douhnut using the method below.
-        var pieChart = new Chart(pieChartCanvas, {
-          type: 'pie',
-          data: pieData,
-          options: pieOptions      
+            datasets: [{
+                data: [totalEmployees, totalManagers],
+                backgroundColor: ['#00a65a', '#f39c12']
+            }]
+        };
+        var pieOptions = {
+            maintainAspectRatio: false,
+            responsive: true
+        };
+        var pieChart = new Chart(pieCtx, {
+            type: 'pie',
+            data: pieData,
+            options: pieOptions
         });
+    } else {
+        console.error("Pie chart canvas not found");
+    }
 
-        var department_list = {{ department_list|safe|escape }};
-        var attendance_list = {{ attendance_list }};
-  
-            var barChartData = {
-      labels  : department_list,
-      datasets: [
-      {
-        label               : 'Attendance',
-        backgroundColor     : '#6c757d',
-        borderColor         : 'rgba(60,141,188,0.8)',
-        pointRadius          : false,
-        pointColor          : '#3b8bba',
-        pointStrokeColor    : 'rgba(60,141,188,1)',
-        pointHighlightFill  : '#fff',
-        pointHighlightStroke: 'rgba(60,141,188,1)',
-        data                : attendance_list
-      }, 
-      
-      ]
+    // Create bar chart with dynamic data
+    var barChartCanvas = document.getElementById('barChart');
+    if (barChartCanvas) {
+        var barCtx = barChartCanvas.getContext('2d');
+        
+        // Parse the data passed from the backend
+        var departmentList = [];
+        var attendanceData = [];
+        
+        try {
+            var departmentData = barChartCanvas.getAttribute('data-departments');
+            var attendanceDataAttr = barChartCanvas.getAttribute('data-attendance');
+            
+            if (departmentData && attendanceDataAttr) {
+                departmentList = JSON.parse(departmentData);
+                attendanceData = JSON.parse(attendanceDataAttr);
+            } else {
+                throw new Error("Missing data attributes");
+            }
+        } catch (e) {
+            console.error("Error parsing department data:", e);
+            // Fallback data if parsing fails
+            departmentList = ['Web dev', 'IT Dept', 'Software', 'Cyberse', 'Account', 'Payroll', 'Budget', 'Recruit', 'Train', 'Employee'];
+            attendanceData = [4.0, 2.0, 2.0, 2.0, 3.0, 2.0, 1.0, 0, 0, 1.0];
+        }
+        
+        var barData = {
+            labels: departmentList,
+            datasets: [{
+                label: 'Attendance',
+                backgroundColor: '#6c757d',
+                borderColor: 'rgba(60,141,188,0.8)',
+                pointRadius: false,
+                pointColor: '#3b8bba',
+                pointStrokeColor: 'rgba(60,141,188,1)',
+                pointHighlightFill: '#fff',
+                pointHighlightStroke: 'rgba(60,141,188,1)',
+                data: attendanceData
+            }]
+        };
+        
+        var barOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                xAxes: [{
+                    gridLines: {
+                        display: false
+                    },
+                    ticks: {
+                        fontColor: '#73879C'
+                    }
+                }],
+                yAxes: [{
+                    ticks: {
+                        beginAtZero: true,
+                        stepSize: 1,
+                        fontColor: '#73879C'
+                    },
+                    gridLines: {
+                        color: 'rgba(153, 153, 153, 0.1)'
+                    }
+                }]
+            },
+            legend: {
+                display: false
+            }
+        };
+        
+        var barChart = new Chart(barCtx, {
+            type: 'bar',
+            data: barData,
+            options: barOptions
+        });
+    } else {
+        console.error("Bar chart canvas not found");
     }
-        var barChartCanvas = $('#barChart').get(0).getContext('2d')
-        var temp0 = barChartData.datasets[0]
-        //var temp1 = areaChartData.datasets[1]
-        barChartData.datasets[0] = temp0
-       // barChartData.datasets[1] = temp0
-    
-    var stackedBarChartOptions = {
-      responsive              : true,
-      maintainAspectRatio     : false,
-      scales: {
-        xAxes: [{
-          stacked: true,
-        }],
-        yAxes: [{
-          stacked: true
-        }]
-      }
-    }
-    
-        var barChart = new Chart(barChartCanvas, {
-          type: 'bar', 
-          data: barChartData,
-          options: stackedBarChartOptions
-        })
-      })
-  </script>
+});
+</script>
 {% endblock custom_js %}

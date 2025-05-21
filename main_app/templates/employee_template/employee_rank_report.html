@@ -1,6 +1,6 @@
 {% extends 'main_app/base.html' %}
 {% load static %}
-{% block page_title %}My Rank Report{% endblock page_title %}
+{% block page_title %}My Performance Report{% endblock page_title %}
 {% block content %}
 
 <section class="content">
@@ -13,6 +13,16 @@
                     </div>
 
                     <div class="card-body">
+                        {% if messages %}
+                        <div class="messages">
+                            {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }}">
+                                {{ message }}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
                         <form id="rankReportForm" method="post" action="{% url 'employee_rank_report' %}">
                             {% csrf_token %}
                             <div class="row">
@@ -40,7 +50,7 @@
                                 </div>
                                 <div class="col-md-4">
                                     <div class="form-group" style="margin-top: 32px;">
-                                        <button type="submit" class="btn btn-primary">
+                                        <button type="submit" class="btn btn-primary" id="generateBtn">
                                             <i class="fas fa-file-pdf"></i> Generate My Report
                                         </button>
                                     </div>
@@ -68,12 +78,19 @@
 {% block custom_js %}
 <script>
 $(document).ready(function() {
-    // No need for custom AJAX handling, using direct form submission
-    $("#rankReportForm").on('submit', function() {
-        // Show loading indicator
+    $("#rankReportForm").on('submit', function(e) {
         var submitBtn = $(this).find('button[type="submit"]');
         submitBtn.html('<i class="fas fa-spinner fa-spin"></i> Generating...');
         submitBtn.prop('disabled', true);
+
+        // Reset the button after 5 seconds if the page hasn't reloaded (for file downloads)
+        setTimeout(function() {
+            submitBtn.html('<i class="fas fa-file-pdf"></i> Generate My Report');
+            submitBtn.prop('disabled', false);
+        }, 5000);
+
+        // Allow the form to submit normally
+        return true;
     });
 });
 </script>

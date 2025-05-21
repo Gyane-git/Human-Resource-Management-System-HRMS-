@@ -26,7 +26,7 @@ class CustomUserForm(FormSettings):
     gender = forms.ChoiceField(choices=[('M', 'Male'), ('F', 'Female')])
     first_name = forms.CharField(required=True)
     last_name = forms.CharField(required=True)
-    address = forms.CharField(widget=forms.Textarea)
+    address = forms.CharField(required=True) #forms.CharField(widget=forms.Textarea)
     password = forms.CharField(widget=forms.PasswordInput)
     widget = {
         'password': forms.PasswordInput(),
@@ -67,6 +67,20 @@ class CustomUserForm(FormSettings):
 class EmployeeForm(CustomUserForm):
     def __init__(self, *args, **kwargs):
         super(EmployeeForm, self).__init__(*args, **kwargs)
+        
+        # Set initial queryset to empty for department field
+        self.fields['department'].queryset = Department.objects.none()
+        
+        # If form is bound and division is selected
+        if 'division' in self.data:
+            try:
+                division_id = int(self.data.get('division'))
+                self.fields['department'].queryset = Department.objects.filter(division_id=division_id)
+            except (ValueError, TypeError):
+                pass  # Invalid division_id
+        # If editing an existing employee
+        elif self.instance.pk and hasattr(self.instance, 'division') and self.instance.division:
+            self.fields['department'].queryset = Department.objects.filter(division=self.instance.division)
 
     class Meta(CustomUserForm.Meta):
         model = Employee
@@ -118,9 +132,10 @@ class LeaveReportManagerForm(FormSettings):
 
     class Meta:
         model = LeaveReportManager
-        fields = ['date', 'message']
+        fields = ['leave_type', 'date_from', 'date_to', 'message']
         widgets = {
-            'date': DateInput(attrs={'type': 'date'}),
+            'date_from': DateInput(attrs={'type': 'date'}),
+            'date_to': DateInput(attrs={'type': 'date'}),
         }
 
 
@@ -140,9 +155,10 @@ class LeaveReportEmployeeForm(FormSettings):
 
     class Meta:
         model = LeaveReportEmployee
-        fields = ['date', 'message']
+        fields = ['leave_type', 'date_from', 'date_to', 'message']
         widgets = {
-            'date': DateInput(attrs={'type': 'date'}),
+            'date_from': DateInput(attrs={'type': 'date'}),
+            'date_to': DateInput(attrs={'type': 'date'}),
         }
 
 
@@ -181,3 +197,39 @@ class EditSalaryForm(FormSettings):
     class Meta:
         model = EmployeeSalary
         fields = ['department', 'employee', 'base', 'ctc']
+
+
+        # forms.py
+from django import forms
+from .models import Salary
+
+class SalaryForm(forms.ModelForm):
+    class Meta:
+        model = Salary
+        fields = '__all__'
+        widgets = {
+            'month_year': forms.DateInput(attrs={'type': 'month'}),
+            'basic_salary': forms.NumberInput(attrs={'step': '0.01', 'min': '0'}),
+            'meal_allowance': forms.NumberInput(attrs={'step': '0.01', 'min': '0'}),
+            'medical_allowance': forms.NumberInput(attrs={'step': '0.01', 'min': '0'}),
+            'transportation_allowance': forms.NumberInput(attrs={'step': '0.01', 'min': '0'}),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['employee'].queryset = Employee.objects.none()
+        
+        if 'department' in self.data:
+            try:
+                department_id = int(self.data.get('department'))
+                self.fields['employee'].queryset = Employee.objects.filter(
+                    department_id=department_id, is_active=True
+                ).order_by('fullname')
+            except (ValueError, TypeError):
+                pass
+        elif self.instance.pk:
+            self.fields['employee'].queryset = self.instance.department.employee_set.filter(
+                is_active=True
+            ).order_by('fullname')
+
+        

@@ -14,12 +14,11 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.urls import path
+from django.contrib.auth.decorators import login_required
 
-from main_app.EditSalaryView import EditSalaryView
-
-from . import ceo_views, manager_views, employee_views, views
-from main_app import ceo_views  # If ceo_views.py is inside main_app folder
-
+from . import views, ceo_views, manager_views, employee_views
+from .EditSalaryView import EditSalaryView
+from .decorators import ceo_required, employee_required
 
 urlpatterns = [
     path("", views.login_page, name='login_page'),
@@ -51,8 +50,24 @@ urlpatterns = [
     path("manager/view/leave/", ceo_views.view_manager_leave, name="view_manager_leave",),
     path("attendance/view/", ceo_views.admin_view_attendance,
          name="admin_view_attendance",),
+    path("attendance/update/", ceo_views.admin_update_attendance,
+         name="admin_update_attendance"),
     path("attendance/fetch/", ceo_views.get_admin_attendance,
          name='get_admin_attendance'),
+    path("get_manager_attendance/", ceo_views.get_manager_attendance,
+         name='get_manager_attendance'),
+    path("update_manager_attendance/", ceo_views.update_manager_attendance,
+         name='update_manager_attendance'),
+    path("manager_attendance/take/", ceo_views.admin_take_manager_attendance,
+         name="admin_take_manager_attendance"),
+    path("manager_attendance/view/", ceo_views.admin_view_manager_attendance,
+         name="admin_view_manager_attendance"),
+    path("view_manager_attendance_data/", ceo_views.view_manager_attendance_data,
+         name="view_manager_attendance_data"),
+    path("get_managers/", ceo_views.get_managers,
+         name="get_managers"),
+    path("save_manager_attendance/", ceo_views.save_manager_attendance,
+         name="save_manager_attendance"),
     path("employee/add/", ceo_views.add_employee, name='add_employee'),
     path("department/add/", ceo_views.add_department, name='add_department'),
     path("manager/manage/", ceo_views.manage_manager, name='manage_manager'),
@@ -80,6 +95,11 @@ urlpatterns = [
     path("admin/manager_leave/view/", ceo_views.view_manager_leave, name="view_manager_leave"),
     path("admin/employee_leave/view/", ceo_views.view_employee_leave, name="view_employee_leave"),
 
+    path('ceo/rank-report/', 
+         login_required(ceo_required(views.ceo_rank_report)), 
+         name='ceo_rank_report'),
+    
+
 
     # Manager
     path("manager/home/", manager_views.manager_home, name='manager_home'),
@@ -93,6 +113,8 @@ urlpatterns = [
     path("manager/attendance/update/", manager_views.manager_update_attendance,
          name='manager_update_attendance'),
     path("manager/get_employees/", manager_views.get_employees, name='get_employees'),
+    path("manager/get-employee-stats/", manager_views.get_employee_stats, name='get_employee_stats'),
+    path("manager/get-employee-leave-stats/", manager_views.get_employee_leave_stats, name='get_employee_leave_stats'),
     path("manager/attendance/fetch/", manager_views.get_employee_attendance,
          name='get_employee_attendance'),
     path("manager/attendance/save/",
@@ -102,20 +124,20 @@ urlpatterns = [
     path("manager/fcmtoken/", manager_views.manager_fcmtoken, name='manager_fcmtoken'),
     path("manager/view/notification/", manager_views.manager_view_notification,
          name="manager_view_notification"),
+    path("manager/view/attendance/", manager_views.manager_view_attendance,
+         name="manager_view_attendance"),
     path("manager/salary/add/", manager_views.manager_add_salary, name='manager_add_salary'),
     path("manager/salary/edit/", EditSalaryView.as_view(),
          name='edit_employee_salary'),
     path('manager/salary/fetch/', manager_views.fetch_employee_salary,
          name='fetch_employee_salary'),
+    path("manager/salary/save/", manager_views.save_salary, name='save_salary'),
+    path("manager/salary/update-status/", manager_views.update_salary_status, name='update_salary_status'),
+    path("manager/salary/delete/", manager_views.delete_salary, name='delete_salary'),
     path("manager/task/assign/", manager_views.manager_assign_task, name='manager_assign_task'),
-    
     path("manager/task/view/", manager_views.manager_view_tasks, name='manager_view_tasks'),
     path("manager/task/update_rating/", manager_views.update_task_rating, name="update_task_rating"),
-
-
-
-
-
+    
     # Employee
     path("employee/home/", employee_views.employee_home, name='employee_home'),
     path("employee/view/attendance/", employee_views.employee_view_attendance,
@@ -133,14 +155,12 @@ urlpatterns = [
     path('employee/view/salary/', employee_views.employee_view_salary,
          name='employee_view_salary'),
     path("employee/tasks/", employee_views.employee_view_tasks, name='employee_view_tasks'),
-    path("employee/home/", employee_views.employee_home, name="employee_home"),
     path("employee/task/count/", employee_views.employee_task_count, name="employee_task_count"),
     path("employee/task/update_status/", employee_views.update_task_status, name="update_task_status"),
     path("employee/task/upload_file/", employee_views.upload_task_file, name="upload_task_file"),
 
-
-
-
-  
+    path('employee/rank-report/', 
+         login_required(employee_required(views.employee_rank_report)), 
+         name='employee_rank_report'),
 
 ]

@@ -184,7 +184,7 @@
                                     <tr>
                                         <td>${salary.employee_name}</td>
                                         <td>${new Date(salary.month_year).toLocaleDateString('en-US', {month: 'long', year: 'numeric'})}</td>
-                                        <td>$${parseFloat(salary.basic_salary).toFixed(2)}</td>
+                                        <td>RS${parseFloat(salary.basic_salary).toFixed(2)}</td>
                                         <td>$${parseFloat(salary.total_earnings - salary.basic_salary).toFixed(2)}</td>
                                         <td>$${parseFloat(salary.total_deductions).toFixed(2)}</td>
                                         <td>$${parseFloat(salary.net_salary).toFixed(2)}</td>
@@ -456,10 +456,11 @@
             var transportationAllowanceValue = parseFloat(transportationAllowance) || 0;
             var leavePaymentValue = parseFloat($(`input[name="leave_payment_${employeeId}"]`).val()) || 0;
             
-            var totalEarnings = basicSalaryValue + mealAllowanceValue + medicalAllowanceValue + transportationAllowanceValue + leavePaymentValue;
+            var totalEarnings = basicSalaryValue + mealAllowanceValue + medicalAllowanceValue + transportationAllowanceValue;
             var taxValue = basicSalaryValue * 0.13;
             var insuranceValue = basicSalaryValue * 0.05;
-            var totalDeductions = taxValue + insuranceValue;
+            var leavePaymentValue = leavePaymentValue;
+            var totalDeductions = taxValue + insuranceValue + leavePaymentValue;
             var netSalary = totalEarnings - totalDeductions;
             
             // Format the month/year for display
@@ -484,28 +485,24 @@
                                 <table class="table table-striped mb-0">
                                     <tr>
                                         <td>Basic Salary</td>
-                                        <td class="text-right">$${basicSalaryValue.toFixed(2)}</td>
+                                        <td class="text-right">Rs${basicSalaryValue.toFixed(2)}</td>
                                     </tr>
                                     <tr>
                                         <td>Meal Allowance</td>
-                                        <td class="text-right">$${mealAllowanceValue.toFixed(2)}</td>
+                                        <td class="text-right">Rs${mealAllowanceValue.toFixed(2)}</td>
                                     </tr>
                                     <tr>
                                         <td>Medical Allowance</td>
-                                        <td class="text-right">$${medicalAllowanceValue.toFixed(2)}</td>
+                                        <td class="text-right">Rs${medicalAllowanceValue.toFixed(2)}</td>
                                     </tr>
                                     <tr>
                                         <td>Transportation Allowance</td>
-                                        <td class="text-right">$${transportationAllowanceValue.toFixed(2)}</td>
+                                        <td class="text-right">Rs${transportationAllowanceValue.toFixed(2)}</td>
                                     </tr>
-                                    ${leavePaymentValue > 0 ? `
-                                    <tr>
-                                        <td>Leave Payment</td>
-                                        <td class="text-right">$${leavePaymentValue.toFixed(2)}</td>
-                                    </tr>` : ''}
+                                    
                                     <tr class="bg-light">
                                         <th>Total Earnings</th>
-                                        <th class="text-right">$${totalEarnings.toFixed(2)}</th>
+                                        <th class="text-right">Rs${totalEarnings.toFixed(2)}</th>
                                     </tr>
                                 </table>
                             </div>
@@ -520,15 +517,21 @@
                                 <table class="table table-striped mb-0">
                                     <tr>
                                         <td>Tax (13%)</td>
-                                        <td class="text-right">$${taxValue.toFixed(2)}</td>
+                                        <td class="text-right">Rs${taxValue.toFixed(2)}</td>
                                     </tr>
                                     <tr>
                                         <td>Insurance (5%)</td>
-                                        <td class="text-right">$${insuranceValue.toFixed(2)}</td>
+                                        <td class="text-right">Rs${insuranceValue.toFixed(2)}</td>
                                     </tr>
+                                    ${leavePaymentValue > 0 ? `
+                                     <tr>
+                                         <td>Leave Payment</td>
+                                        <td class="text-right">Rs${leavePaymentValue.toFixed(2)}</td>
+                                     </tr>` : ''}
+
                                     <tr class="bg-light">
                                         <th>Total Deductions</th>
-                                        <th class="text-right">$${totalDeductions.toFixed(2)}</th>
+                                        <th class="text-right">Rs${totalDeductions.toFixed(2)}</th>
                                     </tr>
                                 </table>
                             </div>
@@ -538,7 +541,7 @@
                 <div class="row mt-3">
                     <div class="col-12 text-center">
                         <div class="alert alert-success">
-                            <h4 class="mb-0">Net Salary: $${netSalary.toFixed(2)}</h4>
+                            <h4 class="mb-0">Net Salary: Rs${netSalary.toFixed(2)}</h4>
                         </div>
                     </div>
                 </div>

@@ -38,7 +38,7 @@ deactivate () {
 # unset irrelevant variables
 deactivate nondestructive
 
-VIRTUAL_ENV="C:\Users\Gyane\Downloads\hello\GP\venv"
+VIRTUAL_ENV="C:\Users\gyaan\OneDrive\Desktop\hello\GP\venv"
 export VIRTUAL_ENV
 
 _OLD_VIRTUAL_PATH="$PATH"

@@ -23,11 +23,50 @@
     box-shadow: 1px 1px 1px grey;
     margin: 5px;
 }
+
+/* Added styles for better UI */
+.loading-spinner {
+    text-align: center;
+    padding: 20px;
+}
+
+.date-picker-container {
+    background: #f9f9f9;
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 15px;
+}
+
+.attendance-legend {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 15px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    margin: 0 10px;
+}
+
+.legend-color {
+    width: 20px;
+    height: 20px;
+    margin-right: 5px;
+    border-radius: 3px;
+}
+
+.legend-present {
+    background: #4CAF50;
+}
+
+.legend-absent {
+    background: #f44336;
+}
 </style>
 {% endblock custom_css %}
 
 {% block content %}
-
 <section class="content">
     <div class="container-fluid">
         <div class="row">
@@ -40,45 +79,64 @@
                     <!-- /.card-header -->
                     <!-- form start -->
                     <div class="card-body">
-
-
-
-                        <div class="form-group">
-                            <label>Select Department</label>
-                            <select  id="department" class="form-control">
-                                <option value="">----</option>
-                                {% for department in departments  %}
-                                <option value="{{department.id}}">{{department.name}} </option>
-                                {% endfor %}
-                            </select>
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> 
+                            View your attendance records for the <strong>{{ employee.department.name }}</strong> department. 
+                            Select a date range to see your attendance history.
                         </div>
-                        <div class="row">
-                            <div class="col-lg-6">
-                                <div class="form-group">
-                                    <label>Start Date</label>
-                                    <input type="date" class="form-control" placeholder="Start Date" name="start_date" required id="start_date">
-                                </div>
-                            </div>
-                            <div class="col-lg-6">
-                                <div class="form-group">
-                                    <label>End Date</label>
-                                    <input type="date" class="form-control" placeholder="End Date" name="end_date"  id="end_date">
-                                </div>
-                            </div>
-                            <button type="button" id="fetch_attendance" class="btn btn-primary btn-block">Fetch
-                                Attendance Data</button>
-               </div>
 
+                        <div class="date-picker-container">
+                            <div class="form-group">
+                                <label>Department</label>
+                                <input type="text" class="form-control" value="{{ employee.department.name }}" readonly>
+                                <input type="hidden" id="department" value="{{ employee.department.id }}">
+                            </div>
+                            <div class="row">
+                                <div class="col-lg-6">
+                                    <div class="form-group">
+                                        <label>Start Date</label>
+                                        <input type="date" class="form-control" placeholder="Start Date" name="start_date" required id="start_date">
+                                    </div>
+                                </div>
+                                <div class="col-lg-6">
+                                    <div class="form-group">
+                                        <label>End Date</label>
+                                        <input type="date" class="form-control" placeholder="End Date" name="end_date"  id="end_date">
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <button type="button" id="fetch_attendance" class="btn btn-primary btn-block">
+                                        <i class="fas fa-calendar-check"></i> Fetch Attendance Data
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="error_message" class="alert alert-danger" style="display: none;"></div>
                     </div>
                     <!-- /.card-body -->
 
                     <div class="card-footer">
+                        <div id="loading" class="loading-spinner" style="display: none;">
+                            <i class="fas fa-spinner fa-spin fa-2x"></i>
+                            <p>Loading your attendance data...</p>
+                        </div>
+                        
+                        <div id="attendance_legend" class="attendance-legend" style="display: none;">
+                            <div class="legend-item">
+                                <div class="legend-color legend-present"></div>
+                                <span>Present</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color legend-absent"></div>
+                                <span>Absent</span>
+                            </div>
+                        </div>
                             
                         <div class="row" id="attendance_data"></div>
                     </div>
                 </div>
                 <!-- /.card -->
-
             </div>
         </div>
     </div>
@@ -89,53 +147,146 @@
 {% block custom_js %}
 <script>
     $(document).ready(function () {
-
+        // Set default dates - current month
+        var today = new Date();
+        var firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+        var lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        
+        // Format dates for input fields
+        var formatDate = function(date) {
+            var d = new Date(date),
+                month = '' + (d.getMonth() + 1),
+                day = '' + d.getDate(),
+                year = d.getFullYear();
+            
+            if (month.length < 2) month = '0' + month;
+            if (day.length < 2) day = '0' + day;
+            
+            return [year, month, day].join('-');
+        };
+        
+        // Set default date values
+        $("#start_date").val(formatDate(firstDay));
+        $("#end_date").val(formatDate(lastDay));
        
         $("#fetch_attendance").click(function () {
-            var department = $("#department").val()
-            var start_date = $("#start_date").val()
-            var end_date = $("#end_date").val()
-            if (department.length  == 0 || end_date.length ==0 ||start_date.length == 0){
-                alert("Please Select Department and Date Range");
+            var department = $("#department").val();
+            var start_date = $("#start_date").val();
+            var end_date = $("#end_date").val();
+            
+            // Hide previous results and error messages
+            $("#attendance_data").html("");
+            $("#error_message").hide();
+            $("#attendance_legend").hide();
+            
+            // Validate input
+            if (end_date.length == 0 || start_date.length == 0) {
+                $("#error_message").html("Please select a date range");
+                $("#error_message").show();
                 return false;
             }
-            $("#attendance_data").html(null)
+            
+            // Validate date range
+            var start = new Date(start_date);
+            var end = new Date(end_date);
+            if (start > end) {
+                $("#error_message").html("Start date must be before end date");
+                $("#error_message").show();
+                return false;
+            }
+            
+            // Show loading indicator
+            $("#loading").show();
+            
+            // Make AJAX request
             $.ajax({
                 url: "{% url 'employee_view_attendance' %}",
                 type: 'POST',
                 data: {
                     department: department,
                     start_date: start_date,
-                    end_date:end_date
-                }
-            }).done(function (response) {
-                var json_data = JSON.parse(response)
-                if (json_data.length < 1) {
-                    $("#attendance_data").html("<div class='col-md-12 alert alert-danger'>No Data For Specified Parameters</div>")
-
-                } else {
-                    var div_data = ""
-                         
-                    for (key in json_data) {
-                    if (json_data[key]['status']){
-                        div_data += "<div class='col-lg-3 attendance_div_green'><b>"+ json_data[key]['date'] + "</b><br/>Present</div>" 
-                    }else{
-
-                        div_data += "<div class='col-lg-3 attendance_div_red'><b>"+ json_data[key]['date'] + "</b><br/>Absent</div>"
+                    end_date: end_date,
+                    csrfmiddlewaretoken: '{{ csrf_token }}'
+                },
+                success: function(response) {
+                    $("#loading").hide();
+                    
+                    console.log("Response received:", response);
+                    
+                    // Check if response is empty
+                    if (!response || response.length < 1) {
+                        $("#attendance_data").html("<div class='col-md-12 alert alert-warning'>No data found for the selected date range</div>");
+                        return;
                     }
+                    
+                    // Show the legend
+                    $("#attendance_legend").show();
+                    
+                    // Parse the response if it's a string
+                    var json_data = response;
+                    if (typeof response === 'string') {
+                        try {
+                            json_data = JSON.parse(response);
+                        } catch (e) {
+                            console.error("Error parsing JSON response:", e);
+                            $("#error_message").html("Error processing server response");
+                            $("#error_message").show();
+                            return;
+                        }
+                    }
+                    
+                    // Build the attendance cards
+                    var div_data = "";
+                    var present_count = 0;
+                    var absent_count = 0;
+                    
+                    for (var i = 0; i < json_data.length; i++) {
+                        var item = json_data[i];
+                        var date_parts = item.date.split('-');
+                        var formatted_date = date_parts[2] + "-" + date_parts[1] + "-" + date_parts[0];
+                        
+                        if (item.status) {
+                            div_data += "<div class='col-lg-3 col-md-4 col-sm-6 attendance_div_green'>" +
+                                "<b>" + formatted_date + "</b><br/>Present</div>";
+                            present_count++;
+                        } else {
+                            div_data += "<div class='col-lg-3 col-md-4 col-sm-6 attendance_div_red'>" +
+                                "<b>" + formatted_date + "</b><br/>Absent</div>";
+                            absent_count++;
+                        }
+                    }
+                    
+                    // Add attendance summary
+                    var total = present_count + absent_count;
+                    var present_percent = Math.round((present_count / total) * 100);
+                    
+                    var summary = "<div class='col-12 mb-4'>" +
+                        "<div class='alert alert-info'>" +
+                        "<strong>Summary:</strong> Present: " + present_count + 
+                        " days (" + present_percent + "%), Absent: " + absent_count + 
+                        " days (" + (100 - present_percent) + "%)" +
+                        "</div></div>";
+                    
+                    $("#attendance_data").html(summary + div_data);
+                },
+                error: function(xhr, status, error) {
+                    $("#loading").hide();
+                    console.error("AJAX Error:", status, error);
+                    
+                    if (xhr.responseText) {
+                        console.error("Error Response:", xhr.responseText);
+                    }
+                    
+                    $("#error_message").html("Error fetching attendance data: " + error);
+                    $("#error_message").show();
                 }
-                    div_data += ""
-                    $("#attendance_data").html(div_data)
-
-                }
-            }).fail(function (response) {
-                $("#attendance_data").html("Error While Fetching Records")
-            })
-
-
-          
-
-        })
-    })
+            });
+        });
+        
+        // Trigger fetch on page load with default date range
+        setTimeout(function() {
+            $("#fetch_attendance").click();
+        }, 500);
+    });
 </script>
 {% endblock custom_js %}

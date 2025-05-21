@@ -13,6 +13,8 @@ from pathlib import Path
 import dj_database_url
 
 
+
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -69,6 +71,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'main_app.context_processors.user_notifications',  # Our custom context processor
             ],
         },
     },
@@ -78,11 +81,12 @@ WSGI_APPLICATION = 'office_ops.wsgi.application'
 
 # Database
 DATABASES = {
-    "default": dj_database_url.config(
-        default=os.environ.get("DATABASE_URL", "sqlite:///db.sqlite3"),  # Fallback to SQLite
-        conn_max_age=500,  # Optimize connections
+    'default': dj_database_url.config(
+        default='postgres://gyane@localhost:5432/my_database',
+        conn_max_age=600
     )
 }
+
 
 # Password validation
 if not DEBUG:

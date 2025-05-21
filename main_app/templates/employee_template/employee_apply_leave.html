@@ -14,26 +14,36 @@
                         <h3 class="card-title">{{page_title}}</h3>
                     </div>
 
-                    {% include "main_app/form_template.html" with messages=messages  form=form button_text="Apply For Leave"%}
+                    {% include "main_app/form_template.html" with messages=messages form=form button_text="Apply For Leave"%}
                 </div>
                 <!-- /.card -->
 <div class="card card-primary">
-    <div class="card-header"><h3 class="card-title">{{page_title}}</h3></div>
+    <div class="card-header"><h3 class="card-title">Leave History</h3></div>
    <div class="table">
 
        <table class="table table-bordered">
            <tr>
                <th>ID</th>
-               <th>Date</th>
+               <th>Leave Type</th>
+               <th>From Date</th>
+               <th>To Date</th>
                <th>Message</th>
-                <th>Status</th>
+               <th>Status</th>
         </tr>
         {% for leave in leave_history %}
         <tr>
             <td>{{forloop.counter}}</td>
-            <td>{{leave.date}}</td>
-              <td>{{leave.message}}</td>
-              <td>
+            <td>
+                {% if leave.leave_type == 'sick' %}
+                    <span class="badge badge-danger">Sick Leave</span>
+                {% else %}
+                    <span class="badge badge-info">Annual Leave</span>
+                {% endif %}
+            </td>
+            <td>{{leave.date_from}}</td>
+            <td>{{leave.date_to}}</td>
+            <td>{{leave.message}}</td>
+            <td>
                   
                   {% if leave.status == 0 %}
                   <span class="badge badge-warning">Pending</span>

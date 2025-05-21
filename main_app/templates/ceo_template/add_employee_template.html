@@ -44,29 +44,87 @@
         return re.test(String(email).toLowerCase());
     }
     $(document).ready(function(){
+        // Email validation
         $("#id_email").keyup(function(){
-            
             var email = $(this).val()
             if (validateEmail(email)){
-            $.ajax({
-                url: "{% url 'check_email_availability' %}",
-                type: 'POST',
-                data:{email:email}
-            }).done(function(response){
-                if (response == "True"){
-                    $(".email_error").remove()
-                    $("<span class='invalid email_error'>Email Address Already Exist</span>").insertAfter("#id_email");
-                }
-                else{
-                    $(".email_error").remove()
+                $.ajax({
+                    url: "{% url 'check_email_availability' %}",
+                    type: 'POST',
+                    data:{email:email}
+                }).done(function(response){
+                    if (response == "True"){
+                        $(".email_error").remove()
+                        $("<span class='invalid email_error'>Email Address Already Exist</span>").insertAfter("#id_email");
+                        showToast("Email Address Already Exists", "Warning", "warning");
+                    }
+                    else{
+                        $(".email_error").remove()
+                        $("<span class='valid email_error'>Email Address Available</span>").insertAfter("#id_email");
+                        showToast("Email Address Available", "Success", "success");
+                    }
+                }).fail(function(response){
+                    $("<span class='alert alert-warning'>Server Could Not Process This</span>").insertAfter("#id_email");
+                    showToast("Server Could Not Process This Request", "Error", "error");
+                })
+            }
+        });
 
-                    $("<span class='valid email_error'>Email Address Available</span>").insertAfter("#id_email");
+        // Handle division change to update department options
+        $("#id_division").change(function() {
+            var divisionId = $(this).val();
+            var departmentSelect = $("#id_department");
+            
+            // Clear current options
+            departmentSelect.empty().append('<option value="">---------</option>');
+            
+            // If no division is selected, do nothing more
+            if (!divisionId) {
+                return;
+            }
+            
+            // Show loading indicator
+            departmentSelect.append('<option value="">Loading departments...</option>');
+            
+            // Fetch departments for selected division
+            $.ajax({
+                url: window.location.href,  // Use current URL
+                type: 'GET',
+                data: {
+                    'division_id': divisionId,
+                    'action': 'get_departments'
+                },
+                dataType: 'json',
+                success: function(data) {
+                    // Clear loading indicator
+                    departmentSelect.empty().append('<option value="">---------</option>');
+                    
+                    // Add new options
+                    $.each(data.departments, function(index, dept) {
+                        departmentSelect.append(
+                            $('<option></option>').val(dept.id).text(dept.name)
+                        );
+                    });
+                    
+                    if (data.departments.length > 0) {
+                        showToast("Departments loaded successfully", "Success", "success");
+                    } else {
+                        showToast("No departments found for selected division", "Information", "info");
+                    }
+                },
+                error: function() {
+                    // Handle error
+                    departmentSelect.empty().append('<option value="">---------</option>');
+                    departmentSelect.append('<option value="">Error loading departments</option>');
+                    showToast("Error loading departments", "Error", "error");
                 }
-            }).fail(function(response){
-                $("<span class='alert alert-warning'>Server Could Not Process This</span>").insertAfter("#id_email");
-            })
+            });
+        });
+        
+        // Trigger the change event if a division is already selected (e.g., in edit mode)
+        if ($("#id_division").val()) {
+            $("#id_division").trigger('change');
         }
-        })
     });
 </script>
 {% endblock custom_js %}
